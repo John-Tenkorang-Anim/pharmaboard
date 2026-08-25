@@ -1,0 +1,40 @@
+openapi: 3.1.0
+info:
+  title: PharmaBoard API
+  version: 0.1.0
+  description: Contract-first API for PharmaBoard. Patient data is prohibited.
+servers:
+  - url: https://api.pharmaboard.example/v1
+paths:
+  /healthz:
+    get:
+      operationId: health
+      tags: [Operations]
+      responses:
+        "200":
+          description: Process is alive.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+  /readyz:
+    get:
+      operationId: readiness
+      tags: [Operations]
+      responses:
+        "200":
+          description: Process can accept traffic.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+components:
+  schemas:
+    Status:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok, ready]

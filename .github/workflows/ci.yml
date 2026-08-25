@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go:
+    name: Go quality gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Verify formatting
+        run: test -z "$(gofmt -l .)"
+      - name: Vet
+        run: go vet ./...
+      - name: Test
+        run: go test -race -coverprofile=coverage.out ./...
+      - name: Enforce module boundaries
+        run: ./scripts/check-boundaries.sh
+      - name: Build
+        run: go build ./...
+
+  migrations:
+    name: Migration smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16.4-alpine
+        env:
+          POSTGRES_DB: pharmaboard
+          POSTGRES_USER: pharmaboard
+          POSTGRES_PASSWORD: pharmaboard
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pharmaboard"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      PGPASSWORD: pharmaboard
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply foundation migration
+        run: psql -h localhost -U pharmaboard -d pharmaboard -v ON_ERROR_STOP=1 -f db/migrations/000001_foundation.up.sql
+      - name: Roll back foundation migration
+        run: psql -h localhost -U pharmaboard -d pharmaboard -v ON_ERROR_STOP=1 -f db/migrations/000001_foundation.down.sql

@@ -1,0 +1,21 @@
+name: Feature request
+description: Propose an outcome, not only an implementation.
+title: "feat: "
+labels: [enhancement, triage]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and affected user
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome and success measure
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Trust, privacy, offline, or operational constraints
