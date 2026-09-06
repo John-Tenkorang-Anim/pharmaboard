@@ -34,4 +34,12 @@ type Repository interface {
 	// commit atomically. This is the sanctioned cross-module read: notices
 	// passes its transaction in; only identity ever queries the users table.
 	ResolveEligibleUserIDs(ctx context.Context, tx pgx.Tx, rule AudienceRule) ([]uuid.UUID, error)
+
+	// ProfilesByIDs batch-loads public profiles. Other modules (community,
+	// messaging) use this to turn author/participant IDs into displayable
+	// people in one round trip instead of N.
+	ProfilesByIDs(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]Profile, error)
+
+	// SearchDirectory backs "find a colleague". Bounded by the service.
+	SearchDirectory(ctx context.Context, q DirectoryQuery) ([]Profile, error)
 }

@@ -58,9 +58,9 @@ type Repository interface {
 }
 
 type DeliveryAttempt struct {
-	ID         uuid.UUID
-	NoticeID   uuid.UUID
-	UserID     uuid.UUID
-	Channel    DeliveryChannel
-	AttemptNo  int16
+	ID        uuid.UUID
+	NoticeID  uuid.UUID
+	UserID    uuid.UUID
+	Channel   DeliveryChannel
+	AttemptNo int16
 }

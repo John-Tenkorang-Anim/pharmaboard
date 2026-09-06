@@ -35,7 +35,7 @@ jobs:
         run: go build ./...
 
   migrations:
-    name: Migration smoke test
+    name: Migrations and integration tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     services:
@@ -54,9 +54,24 @@ jobs:
           --health-retries 20
     env:
       PGPASSWORD: pharmaboard
+      PHARMABOARD_TEST_DATABASE_URL: postgres://pharmaboard:pharmaboard@localhost:5432/pharmaboard?sslmode=disable
     steps:
       - uses: actions/checkout@v4
-      - name: Apply foundation migration
-        run: psql -h localhost -U pharmaboard -d pharmaboard -v ON_ERROR_STOP=1 -f db/migrations/000001_foundation.up.sql
-      - name: Roll back foundation migration
-        run: psql -h localhost -U pharmaboard -d pharmaboard -v ON_ERROR_STOP=1 -f db/migrations/000001_foundation.down.sql
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Apply migrations in order
+        run: |
+          for f in db/migrations/*.up.sql; do
+            echo "applying $f"
+            psql -h localhost -U pharmaboard -d pharmaboard -v ON_ERROR_STOP=1 -f "$f"
+          done
+      - name: Run integration tests against real Postgres
+        run: go test -race ./...
+      - name: Roll back migrations in reverse order
+        run: |
+          for f in $(ls -r db/migrations/*.down.sql); do
+            echo "reverting $f"
+            psql -h localhost -U pharmaboard -d pharmaboard -v ON_ERROR_STOP=1 -f "$f"
+          done

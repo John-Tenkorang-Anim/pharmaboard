@@ -8,9 +8,21 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/admin"
+	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/identity"
+	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/messaging"
+	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/notices"
+	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/sync"
+	"github.com/John-Tenkorang-Anim/pharmaboard/internal/platform/changelog"
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/platform/config"
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/platform/httpserver"
+	"github.com/John-Tenkorang-Anim/pharmaboard/internal/platform/idempotency"
+	"github.com/John-Tenkorang-Anim/pharmaboard/internal/platform/pg"
 )
 
 func main() {
@@ -35,12 +47,122 @@ func run(args []string) error {
 
 	switch args[0] {
 	case "serve":
-		return httpserver.Run(ctx, cfg)
+		return serve(ctx, cfg)
 	case "worker":
-		return errors.New("worker mode is intentionally not implemented before the notice delivery module")
+		return runWorker(ctx, cfg)
 	case "migrate":
-		return errors.New("migration runner is intentionally not implemented; use the pinned migration tool in CI")
+		return errors.New("migration runner is intentionally not implemented; use `make migrate` (psql) locally or the pinned migration job in CI")
 	default:
 		return fmt.Errorf("unknown command %q; expected serve, worker, or migrate", args[0])
+	}
+}
+
+// modules bundles the services shared between the API and worker
+// composition roots so wiring stays in one place.
+type modules struct {
+	identity  *identity.Service
+	notices   *notices.Service
+	admin     *admin.Service
+	sync      *sync.Service
+	messaging *messaging.Service
+}
+
+func wire(pool *pgxpool.Pool, cfg config.Config) modules {
+	identityRepo := identity.NewPostgresRepository(pool)
+	identitySvc := identity.NewService(identityRepo, cfg.Environment)
+
+	noticesRepo := notices.NewPostgresRepository(pool)
+	noticesSvc := notices.NewService(noticesRepo, identitySvc)
+
+	adminRepo := admin.NewPostgresRepository(pool)
+	adminSvc := admin.NewService(adminRepo, identitySvc, cfg.AdminBootstrapToken)
+
+	syncSvc := sync.NewService(pool)
+
+	messagingRepo := messaging.NewPostgresRepository(pool)
+	messagingSvc := messaging.NewService(messagingRepo)
+
+	return modules{identity: identitySvc, notices: noticesSvc, admin: adminSvc, sync: syncSvc, messaging: messagingSvc}
+}
+
+func serve(ctx context.Context, cfg config.Config) error {
+	pool, err := pg.NewPool(ctx, cfg.DatabaseURL)
+	if err != nil {
+		return fmt.Errorf("connect to database: %w", err)
+	}
+	defer pool.Close()
+
+	mods := wire(pool, cfg)
+	auth := identity.RequireAuth(mods.identity)
+
+	router := chi.NewRouter()
+	router.Mount("/auth", identity.Routes(mods.identity))
+	router.Mount("/notices", notices.Routes(mods.notices, auth))
+	router.Mount("/admin", admin.Routes(mods.admin, auth))
+	router.Mount("/sync", sync.Routes(mods.sync, auth))
+	router.Mount("/messaging", messaging.Routes(mods.messaging, auth))
+
+	slog.Info("pharmaboard API composed", "routes", []string{"/v1/auth", "/v1/notices", "/v1/admin", "/v1/sync", "/v1/messaging"})
+	return httpserver.Run(ctx, cfg, router)
+}
+
+func runWorker(ctx context.Context, cfg config.Config) error {
+	pool, err := pg.NewPool(ctx, cfg.DatabaseURL)
+	if err != nil {
+		return fmt.Errorf("connect to database: %w", err)
+	}
+	defer pool.Close()
+
+	noticesRepo := notices.NewPostgresRepository(pool)
+	dispatcher := notices.NewDispatcher(pool, noticesRepo, map[notices.DeliveryChannel]notices.Provider{
+		notices.ChannelPush: notices.NewDevProvider(),
+	})
+
+	slog.Info("pharmaboard worker started")
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		dispatcher.Run(ctx, time.Second)
+	}()
+
+	go runWatermarkPublisher(ctx, pool)
+	go runIdempotencyJanitor(ctx, pool)
+
+	<-done
+	return nil
+}
+
+// runWatermarkPublisher implements the short write barrier from
+// docs/technical-design.md section 10: it periodically waits for in-flight
+// writers and records the true maximum committed sequence as a safe cursor
+// for sync clients.
+func runWatermarkPublisher(ctx context.Context, pool *pgxpool.Pool) {
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if _, err := changelog.PublishWatermark(ctx, pool); err != nil {
+				slog.Error("publish sync watermark failed", "error", err)
+			}
+		}
+	}
+}
+
+func runIdempotencyJanitor(ctx context.Context, pool *pgxpool.Pool) {
+	ticker := time.NewTicker(10 * time.Minute)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if _, err := idempotency.Purge(ctx, pool); err != nil {
+				slog.Error("purge idempotency keys failed", "error", err)
+			}
+		}
 	}
 }

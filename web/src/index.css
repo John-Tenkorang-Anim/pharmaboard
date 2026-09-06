@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    font-family: theme("fontFamily.sans");
+  }
+
+  * {
+    @apply border-rule;
+  }
+
+  ::selection {
+    @apply bg-ink text-paper;
+  }
+
+  /* Newsreader is a text face with an optical-size axis — let it use the
+     display cut at large sizes and the text cut at reading sizes. */
+  .font-display {
+    font-optical-sizing: auto;
+  }
+}
+
+@layer components {
+  /* The editorial kicker: tracked-out caps above a headline, the way a
+     newspaper labels a section or a standfirst. Carries severity here. */
+  .kicker {
+    @apply font-sans text-kicker font-semibold uppercase;
+  }
+
+  .label-caps {
+    @apply font-sans text-label font-medium uppercase text-ink-faint;
+  }
+
+  .rule-hair {
+    @apply border-t border-rule;
+  }
+
+  .rule-heavy {
+    @apply border-t-2 border-rule-strong;
+  }
+
+  .focus-ink {
+    @apply outline-none ring-1 ring-ink ring-offset-2 ring-offset-paper;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-rule;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}

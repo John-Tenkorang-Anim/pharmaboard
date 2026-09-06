@@ -96,6 +96,24 @@ func SafeWatermark(ctx context.Context, pool *pgxpool.Pool) (int64, error) {
 // Page returns up to limit entries after the given cursor, bounded by the
 // latest safe watermark, plus the cursor a client should send next.
 func Page(ctx context.Context, pool *pgxpool.Pool, after int64, limit int) ([]Entry, int64, error) {
+	return page(ctx, pool, "", after, limit)
+}
+
+// PageByAudience is Page scoped to entries carrying a specific
+// audience_key — e.g. a conversation ID, so a messaging module can paginate
+// one conversation's messages using the exact same safe-watermark barrier
+// that already protects notice sync, instead of a second bespoke cursor
+// scheme with its own late-commit race to get right. Backed by
+// change_log_audience_idx (audience_key, sequence_no), so this is an
+// index-scoped query, not a scan of the whole change log.
+func PageByAudience(ctx context.Context, pool *pgxpool.Pool, audienceKey string, after int64, limit int) ([]Entry, int64, error) {
+	if audienceKey == "" {
+		return nil, 0, fmt.Errorf("changelog: PageByAudience requires a non-empty audience key")
+	}
+	return page(ctx, pool, audienceKey, after, limit)
+}
+
+func page(ctx context.Context, pool *pgxpool.Pool, audienceKey string, after int64, limit int) ([]Entry, int64, error) {
 	watermark, err := SafeWatermark(ctx, pool)
 	if err != nil {
 		return nil, 0, err
@@ -104,13 +122,19 @@ func Page(ctx context.Context, pool *pgxpool.Pool, after int64, limit int) ([]En
 		return []Entry{}, watermark, nil
 	}
 
-	rows, err := pool.Query(ctx, `
+	query := `
 		SELECT sequence_no, entity_type, entity_id, operation, entity_version, audience_key
 		FROM change_log
-		WHERE sequence_no > $1 AND sequence_no <= $2
-		ORDER BY sequence_no
-		LIMIT $3`,
-		after, watermark, limit)
+		WHERE sequence_no > $1 AND sequence_no <= $2`
+	args := []any{after, watermark}
+	if audienceKey != "" {
+		query += " AND audience_key = $3"
+		args = append(args, audienceKey)
+	}
+	query += " ORDER BY sequence_no LIMIT " + fmt.Sprintf("$%d", len(args)+1)
+	args = append(args, limit)
+
+	rows, err := pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("changelog: page: %w", err)
 	}

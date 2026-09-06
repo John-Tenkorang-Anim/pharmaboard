@@ -25,7 +25,7 @@ type Provider interface {
 // transiently to exercise the retry and dead-letter paths without a real
 // SMS/push contract.
 type DevProvider struct {
-	Latency         time.Duration
+	Latency           time.Duration
 	TransientFailRate float64
 }
 

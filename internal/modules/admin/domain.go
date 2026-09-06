@@ -15,10 +15,10 @@ import (
 type Role string
 
 const (
-	RoleAuthor          Role = "author"
-	RoleApprover        Role = "approver"
-	RolePublisherAdmin  Role = "publisher_admin"
-	RoleAuditor         Role = "auditor"
+	RoleAuthor         Role = "author"
+	RoleApprover       Role = "approver"
+	RolePublisherAdmin Role = "publisher_admin"
+	RoleAuditor        Role = "auditor"
 )
 
 func (r Role) Valid() bool {
@@ -40,7 +40,7 @@ type AuditEvent struct {
 }
 
 var (
-	ErrRoleExists       = errors.New("admin: role already granted")
-	ErrForbidden        = errors.New("admin: caller lacks the required role")
-	ErrValidation       = errors.New("admin: validation failed")
+	ErrRoleExists = errors.New("admin: role already granted")
+	ErrForbidden  = errors.New("admin: caller lacks the required role")
+	ErrValidation = errors.New("admin: validation failed")
 )

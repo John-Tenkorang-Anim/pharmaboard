@@ -216,9 +216,9 @@ func (r *PostgresRepository) Publish(ctx context.Context, audienceSource identit
 	}
 
 	auditMetadata := map[string]any{
-		"title":             n.Title,
-		"severity":          string(n.Severity),
-		"audience_size":     audienceSize,
+		"title":              n.Title,
+		"severity":           string(n.Severity),
+		"audience_size":      audienceSize,
 		"audience_rule_hash": ruleHash,
 	}
 	if err := audit.Record(ctx, tx, &publisherID, "notices.published", "notice", &id, auditMetadata); err != nil {
@@ -233,10 +233,7 @@ func (r *PostgresRepository) Publish(ctx context.Context, audienceSource identit
 		return Notice{}, fmt.Errorf("notices: commit publish: %w", err)
 	}
 
-	n.State = StatePublished
-	n.AudienceSize = &audienceSize
-	n.Version = newVersion
-	return n, nil
+	return r.Get(ctx, id)
 }
 
 func canonicalHash(rule identity.AudienceRule) string {

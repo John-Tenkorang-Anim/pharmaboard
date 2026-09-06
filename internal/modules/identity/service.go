@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	otpTTL              = 5 * time.Minute
-	otpMaxAttempts      = 5
-	sessionTTL          = 30 * 24 * time.Hour
+	otpTTL         = 5 * time.Minute
+	otpMaxAttempts = 5
+	sessionTTL     = 30 * 24 * time.Hour
 )
 
 // Service implements the identity module's application logic. It is the
@@ -85,7 +85,7 @@ func (s *Service) Register(ctx context.Context, in RegisterInput) (User, error) 
 	if err := s.repo.CreateUser(ctx, user); err != nil {
 		return User{}, err
 	}
-	return user, nil
+	return s.repo.FindByID(ctx, user.ID)
 }
 
 // RequestOTPResult carries the generated code only in non-production
@@ -171,6 +171,33 @@ func (s *Service) Authenticate(ctx context.Context, bearerToken string) (User, e
 
 func (s *Service) GetByID(ctx context.Context, id uuid.UUID) (User, error) {
 	return s.repo.FindByID(ctx, id)
+}
+
+var _ ProfileSource = (*Service)(nil)
+
+// ProfilesByIDs implements ProfileSource for other modules.
+func (s *Service) ProfilesByIDs(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]Profile, error) {
+	return s.repo.ProfilesByIDs(ctx, ids)
+}
+
+func (s *Service) GetProfile(ctx context.Context, id uuid.UUID) (Profile, error) {
+	user, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return Profile{}, err
+	}
+	return ProfileOf(user), nil
+}
+
+// maxDirectoryPage caps directory pagination. Unbounded paging is the
+// scraping vector named in docs/technical-design.md section 12, so the cap
+// lives here in the service rather than being a caller's choice.
+const maxDirectoryPage = 50
+
+func (s *Service) SearchDirectory(ctx context.Context, q DirectoryQuery) ([]Profile, error) {
+	if q.Limit <= 0 || q.Limit > maxDirectoryPage {
+		q.Limit = 25
+	}
+	return s.repo.SearchDirectory(ctx, q)
 }
 
 // Verify records a manual (or, later, authoritative Council) verification

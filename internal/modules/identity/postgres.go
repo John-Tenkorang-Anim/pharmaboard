@@ -240,6 +240,88 @@ func (r *PostgresRepository) ResolveEligibleUserIDs(ctx context.Context, tx pgx.
 	return ids, nil
 }
 
+func (r *PostgresRepository) ProfilesByIDs(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]Profile, error) {
+	profiles := make(map[uuid.UUID]Profile, len(ids))
+	if len(ids) == 0 {
+		return profiles, nil
+	}
+
+	keys := make([]string, len(ids))
+	for i, id := range ids {
+		keys[i] = id.String()
+	}
+
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, display_name, account_kind, verification_state, practice_area, region_code, council_reg_no
+		FROM users
+		WHERE id = ANY($1::uuid[]) AND deleted_at IS NULL`, keys)
+	if err != nil {
+		return nil, fmt.Errorf("identity: profiles by ids: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var p Profile
+		var state VerificationState
+		var regNo *string
+		if err := rows.Scan(&p.ID, &p.DisplayName, &p.AccountKind, &state, &p.PracticeArea, &p.RegionCode, &regNo); err != nil {
+			return nil, fmt.Errorf("identity: scan profile: %w", err)
+		}
+		p.VerificationState = state
+		if state == VerificationVerified {
+			p.CouncilRegNo = regNo
+		}
+		profiles[p.ID] = p
+	}
+	return profiles, rows.Err()
+}
+
+func (r *PostgresRepository) SearchDirectory(ctx context.Context, q DirectoryQuery) ([]Profile, error) {
+	clauses := []string{"deleted_at IS NULL", "id > $1"}
+	args := []any{q.After}
+
+	if q.Search != "" {
+		args = append(args, "%"+q.Search+"%")
+		clauses = append(clauses, fmt.Sprintf("display_name ILIKE $%d", len(args)))
+	}
+	if q.RegionCode != "" {
+		args = append(args, q.RegionCode)
+		clauses = append(clauses, fmt.Sprintf("region_code = $%d", len(args)))
+	}
+	if q.PracticeArea != "" {
+		args = append(args, q.PracticeArea)
+		clauses = append(clauses, fmt.Sprintf("practice_area = $%d", len(args)))
+	}
+	args = append(args, q.Limit)
+
+	query := `
+		SELECT id, display_name, account_kind, verification_state, practice_area, region_code, council_reg_no
+		FROM users WHERE ` + strings.Join(clauses, " AND ") +
+		fmt.Sprintf(" ORDER BY id LIMIT $%d", len(args))
+
+	rows, err := r.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("identity: search directory: %w", err)
+	}
+	defer rows.Close()
+
+	profiles := []Profile{}
+	for rows.Next() {
+		var p Profile
+		var state VerificationState
+		var regNo *string
+		if err := rows.Scan(&p.ID, &p.DisplayName, &p.AccountKind, &state, &p.PracticeArea, &p.RegionCode, &regNo); err != nil {
+			return nil, fmt.Errorf("identity: scan directory row: %w", err)
+		}
+		p.VerificationState = state
+		if state == VerificationVerified {
+			p.CouncilRegNo = regNo
+		}
+		profiles = append(profiles, p)
+	}
+	return profiles, rows.Err()
+}
+
 func isUniqueViolation(err error) bool {
 	var pgErr *pgconn.PgError
 	return errors.As(err, &pgErr) && pgErr.Code == "23505"

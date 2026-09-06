@@ -68,21 +68,21 @@ func (s State) CanTransitionTo(next State) bool {
 }
 
 type Notice struct {
-	ID            uuid.UUID
-	PublisherID   uuid.UUID
-	Title         string
-	BodyMarkdown  string
-	Severity      Severity
-	State         State
-	AudienceRule  identity.AudienceRule
-	AudienceSize  *int
-	ApprovedBy    *uuid.UUID
-	ApprovedAt    *time.Time
-	PublishedAt   *time.Time
-	WithdrawnAt   *time.Time
-	SupersedesID  *uuid.UUID
-	CreatedAt     time.Time
-	Version       int64
+	ID           uuid.UUID
+	PublisherID  uuid.UUID
+	Title        string
+	BodyMarkdown string
+	Severity     Severity
+	State        State
+	AudienceRule identity.AudienceRule
+	AudienceSize *int
+	ApprovedBy   *uuid.UUID
+	ApprovedAt   *time.Time
+	PublishedAt  *time.Time
+	WithdrawnAt  *time.Time
+	SupersedesID *uuid.UUID
+	CreatedAt    time.Time
+	Version      int64
 }
 
 type Recipient struct {
@@ -127,12 +127,12 @@ type DeliveryReport struct {
 }
 
 var (
-	ErrNotFound            = errors.New("notices: not found")
-	ErrInvalidState        = errors.New("notices: invalid state transition")
-	ErrApproverIsAuthor    = errors.New("notices: approver must not be the author")
+	ErrNotFound               = errors.New("notices: not found")
+	ErrInvalidState           = errors.New("notices: invalid state transition")
+	ErrApproverIsAuthor       = errors.New("notices: approver must not be the author")
 	ErrSecondApprovalRequired = errors.New("notices: urgent and critical notices require a distinct approver")
-	ErrVersionConflict     = errors.New("notices: version conflict")
-	ErrValidation          = errors.New("notices: validation failed")
+	ErrVersionConflict        = errors.New("notices: version conflict")
+	ErrValidation             = errors.New("notices: validation failed")
 )
 
 func validateTitleAndBody(title, body string) error {

@@ -43,18 +43,18 @@ const (
 // write the users table directly; they depend on the interfaces this
 // package exports (see AudienceSource).
 type User struct {
-	ID                 uuid.UUID
-	AccountKind        AccountKind
-	DisplayName        string
-	PhoneE164          *string
-	Email              *string
-	PracticeArea       *string
-	RegionCode         *string
-	VerificationState  VerificationState
-	CouncilRegNo       *string
-	VerifiedAt         *time.Time
-	CreatedAt          time.Time
-	Version            int64
+	ID                uuid.UUID
+	AccountKind       AccountKind
+	DisplayName       string
+	PhoneE164         *string
+	Email             *string
+	PracticeArea      *string
+	RegionCode        *string
+	VerificationState VerificationState
+	CouncilRegNo      *string
+	VerifiedAt        *time.Time
+	CreatedAt         time.Time
+	Version           int64
 }
 
 func (u User) IsVerified() bool {
@@ -84,7 +84,7 @@ func (r AudienceRule) Validate() error {
 }
 
 var (
-	ErrNotFound          = errors.New("identity: not found")
+	ErrNotFound           = errors.New("identity: not found")
 	ErrAlreadyExists      = errors.New("identity: identifier already registered")
 	ErrInvalidCredentials = errors.New("identity: invalid or expired credentials")
 	ErrTooManyAttempts    = errors.New("identity: too many attempts")

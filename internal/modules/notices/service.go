@@ -52,7 +52,7 @@ func (s *Service) CreateDraft(ctx context.Context, in DraftInput) (Notice, error
 	if err := s.repo.Create(ctx, n); err != nil {
 		return Notice{}, err
 	}
-	return n, nil
+	return s.repo.Get(ctx, n.ID)
 }
 
 func (s *Service) Get(ctx context.Context, id uuid.UUID) (Notice, error) {
