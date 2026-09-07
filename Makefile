@@ -31,15 +31,15 @@ run: ## Run the API locally
 worker: ## Run the notice dispatch worker and sync watermark publisher locally
 	go run ./cmd/pharmaboard worker
 
-migrate: ## Apply all database migrations in order
-	@set -a; [ -f .env ] && . ./.env; set +a; \
+migrate: ## Apply all database migrations in order (PHARMABOARD_DATABASE_URL in the calling env wins over .env, e.g. to target a remote database)
+	@set -a; [ -z "$$PHARMABOARD_DATABASE_URL" ] && [ -f .env ] && . ./.env; set +a; \
 	for f in db/migrations/*.up.sql; do \
 		echo "applying $$f"; \
 		psql "$$PHARMABOARD_DATABASE_URL" -v ON_ERROR_STOP=1 -f "$$f"; \
 	done
 
-migrate-down: ## Roll back all database migrations in reverse order
-	@set -a; [ -f .env ] && . ./.env; set +a; \
+migrate-down: ## Roll back all database migrations in reverse order (PHARMABOARD_DATABASE_URL in the calling env wins over .env, e.g. to target a remote database)
+	@set -a; [ -z "$$PHARMABOARD_DATABASE_URL" ] && [ -f .env ] && . ./.env; set +a; \
 	for f in $$(ls -r db/migrations/*.down.sql); do \
 		echo "reverting $$f"; \
 		psql "$$PHARMABOARD_DATABASE_URL" -v ON_ERROR_STOP=1 -f "$$f"; \

@@ -6,6 +6,7 @@ import { useAuth } from "./AuthContext";
 import { Button } from "@/components/ui/Button";
 import { TextInput, Select } from "@/components/ui/Field";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { ApiError } from "@/lib/api";
 
 type Step = "contact" | "code";
 
@@ -69,13 +70,23 @@ export function LoginPage() {
     setBusy(true);
     try {
       if (mode === "signup") {
-        await register({
-          account_kind: accountKind,
-          display_name: displayName,
-          phone_e164: phone,
-          practice_area: field === "Other" ? otherField.trim() : field,
-          institution: institution.trim(),
-        });
+        try {
+          await register({
+            account_kind: accountKind,
+            display_name: displayName,
+            phone_e164: phone,
+            practice_area: field === "Other" ? otherField.trim() : field,
+            institution: institution.trim(),
+          });
+        } catch (err) {
+          // 409 means this phone number already has an account — most often
+          // someone who registered on an earlier attempt (e.g. one that
+          // failed after registering but before OTP completed) and is
+          // simply trying again. Treat it exactly like signing in, rather
+          // than dead-ending them on an "already registered" error with no
+          // way forward.
+          if (!(err instanceof ApiError && err.status === 409)) throw err;
+        }
       }
       const result = await requestOtp("phone", phone);
       setDevCode(result.dev_only_code ?? null);
