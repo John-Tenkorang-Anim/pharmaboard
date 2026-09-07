@@ -1,8 +1,10 @@
 package identity
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -174,5 +176,43 @@ func TestProductionOTPFailClosed(t *testing.T) {
 	}
 	if _, err := svc.RequestOTP(context.Background(), ChannelEmail, "a@example.com"); !errors.Is(err, ErrInvalidCredentials) {
 		t.Fatal("unsupported channel accepted")
+	}
+}
+
+func TestGhanaPhoneNormalization(t *testing.T) {
+	for input, want := range map[string]string{
+		"024 123 4567": "+233241234567", "233241234567": "+233241234567",
+		"+233 24 123 4567": "+233241234567", "(020) 123-4567": "+233201234567",
+		"+44 7700 900123": "+447700900123", "123": "123",
+	} {
+		if got := normalizePhone(input); got != want {
+			t.Errorf("normalizePhone(%q)=%q want %q", input, got, want)
+		}
+	}
+}
+
+func TestTwilioDiagnosticsRedactSensitiveFields(t *testing.T) {
+	var logs bytes.Buffer
+	old := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&logs, nil)))
+	defer slog.SetDefault(old)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(403)
+		w.Write([]byte(`{"code":60410,"message":"secret-token +233241234567 code 987654"}`))
+	}))
+	defer server.Close()
+	p := NewTwilioVerify("account", "secret-token", "service")
+	p.baseURL = server.URL
+	if err := p.Send(context.Background(), "+233241234567"); !errors.Is(err, ErrOTPUnavailable) {
+		t.Fatal("unexpected provider result")
+	}
+	output := logs.String()
+	if !strings.Contains(output, `"provider_code":60410`) {
+		t.Fatal("missing actionable numeric provider code")
+	}
+	for _, sensitive := range []string{"secret-token", "+233241234567", "987654"} {
+		if strings.Contains(output, sensitive) {
+			t.Fatal("sensitive provider data logged")
+		}
 	}
 }

@@ -24,20 +24,9 @@ func TestLoadRejectsInvalidAddress(t *testing.T) {
 	}
 }
 
-func TestProductionRequiresSMSProvider(t *testing.T) {
+func TestProductionDoesNotRequireTwilio(t *testing.T) {
 	t.Setenv("PHARMABOARD_ENV", "production")
-	t.Setenv("PHARMABOARD_OTP_PROVIDER", "development")
-	if _, err := Load(); err == nil {
-		t.Fatal("production allowed development OTP")
-	}
-	t.Setenv("PHARMABOARD_OTP_PROVIDER", "twilio")
 	t.Setenv("TWILIO_ACCOUNT_SID", "")
-	if _, err := Load(); err == nil {
-		t.Fatal("missing credentials accepted")
-	}
-	t.Setenv("TWILIO_ACCOUNT_SID", "AC00000000000000000000000000000000")
-	t.Setenv("TWILIO_AUTH_TOKEN", "test-placeholder")
-	t.Setenv("TWILIO_VERIFY_SERVICE_SID", "VA00000000000000000000000000000000")
 	if _, err := Load(); err != nil {
 		t.Fatal(err)
 	}

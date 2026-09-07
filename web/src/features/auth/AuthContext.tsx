@@ -20,6 +20,7 @@ interface AuthContextValue {
   requestOtp: (channel: Channel, contact: string) => Promise<OtpRequestResult>;
   register: (input: RegisterInput) => Promise<User>;
   verifyOtp: (channel: Channel, contact: string, code: string) => Promise<void>;
+  signIn: (method: "login" | "signup" | "google", input: Record<string, unknown>) => Promise<void>;
   logout: () => void;
 }
 
@@ -79,6 +80,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [queryClient],
   );
 
+  const signIn = useCallback(
+    async (method: "login" | "signup" | "google", input: Record<string, unknown>) => {
+      const session = await apiFetch<Session>(`/auth/${method}`, {
+        method: "POST",
+        body: input,
+        auth: false,
+      });
+      setToken(session.access_token);
+      setHasToken(true);
+      await queryClient.invalidateQueries({ queryKey: ["me"] });
+    },
+    [queryClient],
+  );
+
   const logout = useCallback(() => {
     setToken(null);
     setHasToken(false);
@@ -94,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         verifyOtp,
         logout,
+        signIn,
       }}
     >
       {children}

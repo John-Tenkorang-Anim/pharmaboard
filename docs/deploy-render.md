@@ -27,15 +27,7 @@ changed before.
   API cold-starts on the next request. Also capped at 750 instance-hours/
   month. Acceptable for a demo, not for something people rely on being
   responsive.
-- **Production requires real Twilio credentials.** `config.Load()`
-  (`internal/platform/config/config.go`) refuses to start with
-  `PHARMABOARD_ENV=production` unless `PHARMABOARD_OTP_PROVIDER=twilio` and
-  all three `TWILIO_*` values are set and pass a format check — there is no
-  dev-mode fallback in production. You need a real Twilio account with a
-  [Verify Service](https://www.twilio.com/docs/verify) configured before
-  the API will boot. **The worker needs these too**, even though it never
-  calls Twilio — `config.Load()` runs identically for both subcommands, so
-  a worker missing them will crash-loop on startup in production.
+- **Authentication uses email/password or Google.** Twilio is no longer used by the running application. Follow [authentication setup](authentication.md) before deploying this change.
 
 ## 1. Push `render.yaml` and create the Blueprint
 
@@ -49,8 +41,7 @@ prompting for every `sync: false` value:
   `https://pharmaboard.vercel.app`). There is no dev-mode
   Origin-reflection fallback in production; a missing or wrong value here
   means the browser console gets CORS errors, not a helpful backend log.
-- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID`
-  on **both** services — from your Twilio console.
+- `GOOGLE_CLIENT_ID` on the API — the Google web OAuth client ID. Leave blank for email/password only until Google setup is complete.
 
 `PHARMABOARD_ADMIN_BOOTSTRAP_TOKEN` is generated automatically
 (`generateValue: true`); find the value Render picked under the API
@@ -122,6 +113,10 @@ just the process running.
 ## Later: adding a new migration
 
 Add the new `NNN_name.up.sql`/`.down.sql` pair as usual, then repeat step
-2's `make migrate` command against the external URL — before merging code
+2's database connection step, applying only the new migration file once against the external URL — before merging code
 that depends on the new schema, the same ordering the project already
 expects locally.
+
+## Authentication
+
+SMS sign-in has been replaced. See [authentication setup](authentication.md) for Google configuration, database migration and existing-account access.

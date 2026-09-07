@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -22,7 +23,8 @@ const (
 // unexported from module boundaries by convention (docs/architecture
 // says modules depend on interfaces, not implementations).
 type Service struct {
-	repo Repository
+	repo   Repository
+	google GoogleVerifier
 	// devMode surfaces the generated OTP code directly in API responses
 	// instead of sending it through a real SMS/email provider. Phone-first
 	// OTP is a product hypothesis per docs/technical-design.md section 11;
@@ -69,8 +71,17 @@ type RegisterInput struct {
 }
 
 func normalizePhone(value string) string {
-	return strings.NewReplacer(" ", "", "-", "", "(", "", ")", "").Replace(strings.TrimSpace(value))
+	value = strings.NewReplacer(" ", "", "-", "", "(", "", ")", "").Replace(strings.TrimSpace(value))
+	// Ghana is the default country. Preserve explicit international numbers.
+	if regexp.MustCompile(`^0[0-9]{9}$`).MatchString(value) {
+		return "+233" + value[1:]
+	}
+	if regexp.MustCompile(`^233[0-9]{9}$`).MatchString(value) {
+		return "+" + value
+	}
+	return value
 }
+
 func (s *Service) Register(ctx context.Context, in RegisterInput) (User, error) {
 	if in.PhoneE164 != nil {
 		v := normalizePhone(*in.PhoneE164)

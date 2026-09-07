@@ -56,16 +56,7 @@ services:
       # production; there is no dev-mode Origin-reflection fallback here.
       - key: PHARMABOARD_ALLOWED_ORIGINS
         sync: false
-      # config.Load() requires PHARMABOARD_OTP_PROVIDER=twilio whenever
-      # PHARMABOARD_ENV=production — the dev-mode "code echoed back in the
-      # response" OTP path is refused outright.
-      - key: PHARMABOARD_OTP_PROVIDER
-        value: twilio
-      - key: TWILIO_ACCOUNT_SID
-        sync: false
-      - key: TWILIO_AUTH_TOKEN
-        sync: false
-      - key: TWILIO_VERIFY_SERVICE_SID
+      - key: GOOGLE_CLIENT_ID
         sync: false
 
   - name: pharmaboard-worker
@@ -88,16 +79,3 @@ services:
         fromDatabase:
           name: pharmaboard-db
           property: connectionString
-      # config.Load() runs identically for `serve` and `worker` — the
-      # worker never calls Twilio, but it still fails validation and
-      # crash-loops on boot without these three set to real values,
-      # because PHARMABOARD_ENV=production forces PHARMABOARD_OTP_PROVIDER
-      # to twilio regardless of which subcommand is running.
-      - key: PHARMABOARD_OTP_PROVIDER
-        value: twilio
-      - key: TWILIO_ACCOUNT_SID
-        sync: false
-      - key: TWILIO_AUTH_TOKEN
-        sync: false
-      - key: TWILIO_VERIFY_SERVICE_SID
-        sync: false

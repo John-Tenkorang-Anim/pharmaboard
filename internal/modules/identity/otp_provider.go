@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -42,13 +43,20 @@ func (p *TwilioVerify) request(ctx context.Context, path string, values url.Valu
 		return "", 0, ErrOTPUnavailable
 	}
 	defer res.Body.Close()
-	if res.StatusCode == 429 {
-		return "", 429, ErrTooManyAttempts
-	}
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		_, _ = io.Copy(io.Discard, io.LimitReader(res.Body, 4096))
+		var failure struct {
+			Code int `json:"code"`
+		}
+		_ = json.NewDecoder(io.LimitReader(res.Body, 4096)).Decode(&failure)
+		// Numeric diagnostics only: never log provider bodies, contacts, codes,
+		// credentials, request URLs or headers.
+		slog.Warn("otp_provider_rejected", "provider", "twilio", "operation", strings.TrimPrefix(path, "/"), "http_status", res.StatusCode, "provider_code", failure.Code)
+		if res.StatusCode == 429 {
+			return "", 429, ErrTooManyAttempts
+		}
 		return "", res.StatusCode, ErrOTPUnavailable
 	}
+
 	var body struct {
 		Status string `json:"status"`
 	}

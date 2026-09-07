@@ -4,6 +4,8 @@ PharmaBoard is a trusted digital platform for Ghana's pharmacy profession. Its f
 
 > Status: functional development platform with official notices, community feed, professional profiles and follows, Rx Forum, group messaging, video call handoff, and a persistent learning/careers/session workspace. See [workspace capabilities and setup](docs/workspace.md) for supported integrations and remaining launch requirements.
 
+Authentication now supports **email/password or Google sign-in**, without SMS. See [deployment and existing-account guidance](docs/authentication.md); apply migration 000011 before deploying this update.
+
 ## Architecture at a glance
 
 - **Go modular monolith** for the API and asynchronous worker

@@ -17,9 +17,14 @@ import (
 // authenticated session.
 func Routes(svc *Service) chi.Router {
 	r := chi.NewRouter()
-	r.Post("/register", registerHandler(svc))
-	r.Post("/otp/request", requestOTPHandler(svc))
-	r.Post("/otp/verify", verifyOTPHandler(svc))
+	r.Post("/signup", credentialsHandler(svc, "signup"))
+	r.Post("/login", credentialsHandler(svc, "login"))
+	r.Post("/google", credentialsHandler(svc, "google"))
+	if svc.devMode {
+		r.Post("/register", registerHandler(svc))
+		r.Post("/otp/request", requestOTPHandler(svc))
+		r.Post("/otp/verify", verifyOTPHandler(svc))
+	}
 	r.With(RequireAuth(svc)).Get("/me", meHandler())
 	return r
 }

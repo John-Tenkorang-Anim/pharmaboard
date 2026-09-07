@@ -28,8 +28,93 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
+  /auth/signup:
+    post:
+      operationId: signup
+      summary: Create an email/password account and session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Signup'
+      responses:
+        '200':
+          $ref: '#/components/responses/Session'
+        '400':
+          description: Invalid profile, email or password (12–72 UTF-8 bytes required).
+        '409':
+          description: Email already belongs to an account; accounts are never merged automatically.
+        '429':
+          description: Too many attempts. Retry after the 15-minute window.
+  /auth/login:
+    post:
+      operationId: passwordLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: {type: string, format: email}
+                password: {type: string, format: password}
+      responses:
+        '200':
+          $ref: '#/components/responses/Session'
+        '400':
+          description: Invalid email or password.
+        '429':
+          description: Too many attempts.
+  /auth/google:
+    post:
+      operationId: googleLogin
+      summary: Sign in with a Google ID token; new users also supply onboarding fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [credential]
+              properties:
+                credential: {type: string, description: Google Identity Services ID token}
+                display_name: {type: string}
+                account_kind: {type: string, enum: [student, pharmacist, professional, educator, organisation]}
+                institution: {type: string, maxLength: 160}
+                practice_area: {type: string, maxLength: 160}
+      responses:
+        '200':
+          $ref: '#/components/responses/Session'
+        '400':
+          description: Invalid token, or profile_required for a new Google user.
+        '409':
+          description: Email collision with an existing account. No automatic linking.
 components:
+  responses:
+    Session:
+      description: Authenticated session. Store the bearer token securely.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [access_token, token_type, expires_at]
+            properties:
+              access_token: {type: string}
+              token_type: {type: string, const: Bearer}
+              expires_at: {type: string, format: date-time}
   schemas:
+    Signup:
+      type: object
+      required: [email, password, display_name, account_kind]
+      properties:
+        email: {type: string, format: email, maxLength: 254}
+        password: {type: string, format: password, description: 12–72 UTF-8 bytes}
+        display_name: {type: string, minLength: 2, maxLength: 120}
+        account_kind: {type: string, enum: [student, pharmacist, professional, educator, organisation]}
+        institution: {type: string, maxLength: 160}
+        practice_area: {type: string, maxLength: 160}
     Status:
       type: object
       additionalProperties: false

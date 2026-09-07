@@ -72,11 +72,8 @@ type modules struct {
 
 func wire(pool *pgxpool.Pool, cfg config.Config) modules {
 	identityRepo := identity.NewPostgresRepository(pool)
-	var otp identity.OTPProvider
-	if cfg.OTPProvider == "twilio" {
-		otp = identity.NewTwilioVerify(cfg.TwilioAccountSID, cfg.TwilioAuthToken, cfg.TwilioVerifyServiceSID)
-	}
-	identitySvc := identity.NewService(identityRepo, cfg.Environment, otp)
+	identitySvc := identity.NewService(identityRepo, cfg.Environment)
+	identitySvc.ConfigureGoogle(cfg.GoogleClientID)
 
 	noticesRepo := notices.NewPostgresRepository(pool)
 	noticesSvc := notices.NewService(noticesRepo, identitySvc)
