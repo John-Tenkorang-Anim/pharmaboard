@@ -15,10 +15,10 @@ import (
 // Run starts the HTTP server. apiHandler serves everything under /v1; it is
 // composed by the caller (cmd/pharmaboard) from each module's routes so this
 // package stays infrastructure-only and never imports a business module.
-func Run(ctx context.Context, cfg config.Config, apiHandler http.Handler) error {
+func Run(ctx context.Context, cfg config.Config, apiHandler http.Handler, readiness func(context.Context) error) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", health)
-	mux.HandleFunc("GET /readyz", ready)
+	mux.HandleFunc("GET /readyz", ready(readiness))
 	if apiHandler != nil {
 		mux.Handle("/v1/", http.StripPrefix("/v1", apiHandler))
 	}
@@ -55,8 +55,16 @@ func health(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-func ready(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ready"})
+func ready(check func(context.Context) error) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+		if check == nil || check(ctx) != nil {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"status": "not_ready"})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]string{"status": "ready"})
+	}
 }
 
 func writeJSON(w http.ResponseWriter, status int, body any) {

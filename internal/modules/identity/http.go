@@ -224,6 +224,8 @@ func userResponse(u User) map[string]any {
 
 func writeServiceError(w http.ResponseWriter, err error) {
 	switch {
+	case errors.Is(err, ErrOTPUnavailable):
+		problem.Write(w, http.StatusServiceUnavailable, "otp_unavailable", "Verification unavailable", err.Error())
 	case errors.Is(err, ErrNotFound):
 		problem.NotFound(w, err.Error())
 	case errors.Is(err, ErrAlreadyExists):

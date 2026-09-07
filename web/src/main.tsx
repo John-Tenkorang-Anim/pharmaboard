@@ -1,3 +1,4 @@
+import { platform } from "@/lib/platform";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
@@ -5,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/features/auth/AuthContext";
 import { App } from "./App";
 import "./index.css";
+
+document.title = platform.name;
 
 const queryClient = new QueryClient({
   defaultOptions: {

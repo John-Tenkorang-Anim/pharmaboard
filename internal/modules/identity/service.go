@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -28,10 +29,15 @@ type Service struct {
 	// this keeps the whole flow runnable and testable without a contracted
 	// provider while making the simulation impossible to mistake for prod.
 	devMode bool
+	otp     OTPProvider
 }
 
-func NewService(repo Repository, environment string) *Service {
-	return &Service{repo: repo, devMode: environment != "production"}
+func NewService(repo Repository, environment string, providers ...OTPProvider) *Service {
+	s := &Service{repo: repo, devMode: environment != "production"}
+	if len(providers) > 0 {
+		s.otp = providers[0]
+	}
+	return s
 }
 
 var _ AudienceSource = (*Service)(nil)
@@ -62,7 +68,17 @@ type RegisterInput struct {
 	PracticeArea *string
 }
 
+func normalizePhone(value string) string {
+	return strings.NewReplacer(" ", "", "-", "", "(", "", ")", "").Replace(strings.TrimSpace(value))
+}
 func (s *Service) Register(ctx context.Context, in RegisterInput) (User, error) {
+	if in.PhoneE164 != nil {
+		v := normalizePhone(*in.PhoneE164)
+		in.PhoneE164 = &v
+		if s.otp != nil && !phonePattern.MatchString(v) {
+			return User{}, fmt.Errorf("%w: phone must include its country code", ErrInvalidCredentials)
+		}
+	}
 	if (in.Institution != nil && len(*in.Institution) > 160) || (in.PracticeArea != nil && len(*in.PracticeArea) > 160) {
 		return User{}, fmt.Errorf("%w: institution and field must be at most 160 characters", ErrInvalidCredentials)
 	}
@@ -103,9 +119,29 @@ type RequestOTPResult struct {
 }
 
 func (s *Service) RequestOTP(ctx context.Context, channel Channel, contact string) (RequestOTPResult, error) {
+	if channel == ChannelPhone {
+		contact = normalizePhone(contact)
+	}
+	if s.otp != nil && (channel != ChannelPhone || !phonePattern.MatchString(contact)) {
+		return RequestOTPResult{}, fmt.Errorf("%w: use a phone number in international format, such as +233200000000", ErrInvalidCredentials)
+	}
+	if s.otp == nil && !s.devMode {
+		return RequestOTPResult{}, ErrOTPUnavailable
+	}
 	user, err := s.repo.FindByContact(ctx, channel, contact)
 	if err != nil {
 		return RequestOTPResult{}, err
+	}
+
+	if s.otp != nil {
+		expires := time.Now().Add(10 * time.Minute)
+		if err := s.repo.ReserveExternalOTP(ctx, uuid.Must(uuid.NewV7()), user.ID, channel, hashToken("external-otp"), expires); err != nil {
+			return RequestOTPResult{}, err
+		}
+		if err := s.otp.Send(ctx, contact); err != nil {
+			return RequestOTPResult{}, err
+		}
+		return RequestOTPResult{UserID: user.ID, ExpiresAt: expires}, nil
 	}
 
 	code, codeHash, err := newOTPCode()
@@ -132,6 +168,15 @@ type Session struct {
 }
 
 func (s *Service) VerifyOTP(ctx context.Context, channel Channel, contact, code string) (Session, error) {
+	if channel == ChannelPhone {
+		contact = normalizePhone(contact)
+	}
+	if s.otp == nil && !s.devMode {
+		return Session{}, ErrOTPUnavailable
+	}
+	if s.otp != nil && (channel != ChannelPhone || !phonePattern.MatchString(contact) || !codePattern.MatchString(code)) {
+		return Session{}, ErrInvalidCredentials
+	}
 	user, err := s.repo.FindByContact(ctx, channel, contact)
 	if err != nil {
 		return Session{}, err
@@ -145,7 +190,21 @@ func (s *Service) VerifyOTP(ctx context.Context, channel Channel, contact, code 
 		return Session{}, ErrTooManyAttempts
 	}
 
-	ok, err := s.repo.ConsumeOTPChallenge(ctx, user.ID, channel, hashToken(code))
+	codeHash := hashToken(code)
+	if s.otp != nil {
+		if attempts == 0 {
+			return Session{}, ErrInvalidCredentials
+		}
+		approved, err := s.otp.Check(ctx, contact, code)
+		if err != nil {
+			return Session{}, err
+		}
+		if !approved {
+			return Session{}, ErrInvalidCredentials
+		}
+		codeHash = hashToken("external-otp")
+	}
+	ok, err := s.repo.ConsumeOTPChallenge(ctx, user.ID, channel, codeHash)
 	if err != nil {
 		return Session{}, err
 	}

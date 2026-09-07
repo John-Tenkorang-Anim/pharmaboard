@@ -9,6 +9,7 @@ import {
   House,
   Users,
   MessagesSquare,
+  Globe2,
   Bell,
   GraduationCap,
   Video,
@@ -23,7 +24,7 @@ import { useAuth } from "@/features/auth/AuthContext";
 import { Avatar } from "@/components/ui/Avatar";
 const navItems = [
   { to: "/home", label: "Overview", icon: House },
-  { to: "/community", label: "Community", icon: MessagesSquare },
+  { to: "/community", label: "Community", icon: Globe2 },
   { to: "/notices", label: "Notice board", icon: Bell },
   { to: "/learning", label: "Learning", icon: GraduationCap },
   { to: "/sessions", label: "Collaboration", icon: Video },

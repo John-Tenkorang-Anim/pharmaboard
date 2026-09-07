@@ -1,3 +1,4 @@
+import { platform } from "@/lib/platform";
 import { useState, useEffect, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -75,7 +76,7 @@ export function PostComposer({ scope = "everyone" }: { scope?: FeedScope }) {
             </button>
             <Link to="/forum" className="flex items-center gap-2">
               <MessageSquare size={14} />
-              Ask in Rx Forum
+              Ask in {platform.forumName}
             </Link>
           </div>
         )}
@@ -131,7 +132,7 @@ export function CommunitySidebar() {
           ))}
         </div>
         <Link to="/forum" className="mt-5 block text-xs font-medium text-accent-700">
-          Explore Rx Forum →
+          Explore {platform.forumName} →
         </Link>
       </section>
       <p className="px-1 text-xs leading-6 text-muted">

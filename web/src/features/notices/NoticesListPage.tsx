@@ -1,3 +1,4 @@
+import { platform } from "@/lib/platform";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowUpRight, Bell, FileText, PenSquare, Search, Users } from "lucide-react";
@@ -260,11 +261,12 @@ export function NoticesListPage() {
           <section className="px-1">
             <h2 className="text-sm font-semibold">Looking for a conversation?</h2>
             <p className="mt-2 text-sm leading-6 text-muted">
-              Share experiences in Community, or ask a focused professional question in RxForum.
+              Share experiences in Community, or ask a focused professional question in{" "}
+              {platform.forumName}.
             </p>
             <div className="mt-4 flex gap-4 text-sm font-medium text-accent-700">
               <Link to="/community">Community ↗</Link>
-              <Link to="/forum">RxForum ↗</Link>
+              <Link to="/forum">{platform.forumName} ↗</Link>
             </div>
           </section>
         </aside>

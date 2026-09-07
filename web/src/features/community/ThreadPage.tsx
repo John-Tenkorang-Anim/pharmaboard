@@ -1,3 +1,4 @@
+import { platform } from "@/lib/platform";
 import { useState, type FormEvent } from "react";
 import { useParams, Link } from "react-router-dom";
 import clsx from "clsx";
@@ -67,7 +68,7 @@ export function ThreadPage() {
         className="mb-4 inline-flex items-center gap-1.5 text-[0.8125rem] font-medium text-faint transition-colors hover:text-ink"
       >
         <ArrowLeft className="size-4" />
-        Rx Forum
+        {platform.forumName}
       </Link>
 
       <Card className="social-card mb-6">

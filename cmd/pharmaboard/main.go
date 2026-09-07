@@ -72,7 +72,11 @@ type modules struct {
 
 func wire(pool *pgxpool.Pool, cfg config.Config) modules {
 	identityRepo := identity.NewPostgresRepository(pool)
-	identitySvc := identity.NewService(identityRepo, cfg.Environment)
+	var otp identity.OTPProvider
+	if cfg.OTPProvider == "twilio" {
+		otp = identity.NewTwilioVerify(cfg.TwilioAccountSID, cfg.TwilioAuthToken, cfg.TwilioVerifyServiceSID)
+	}
+	identitySvc := identity.NewService(identityRepo, cfg.Environment, otp)
 
 	noticesRepo := notices.NewPostgresRepository(pool)
 	noticesSvc := notices.NewService(noticesRepo, identitySvc)
@@ -121,7 +125,7 @@ func serve(ctx context.Context, cfg config.Config) error {
 	slog.Info("pharmaboard API composed", "routes", []string{
 		"/v1/auth", "/v1/users", "/v1/notices", "/v1/admin", "/v1/sync", "/v1/messaging", "/v1/community", "/v1/workspace",
 	})
-	return httpserver.Run(ctx, cfg, router)
+	return httpserver.Run(ctx, cfg, router, pool.Ping)
 }
 
 func runWorker(ctx context.Context, cfg config.Config) error {

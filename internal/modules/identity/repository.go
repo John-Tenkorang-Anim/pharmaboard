@@ -15,6 +15,7 @@ type Repository interface {
 	FindByContact(ctx context.Context, channel Channel, value string) (User, error)
 	FindByID(ctx context.Context, id uuid.UUID) (User, error)
 
+	ReserveExternalOTP(ctx context.Context, id, userID uuid.UUID, channel Channel, codeHash []byte, expiresAt time.Time) error
 	CreateOTPChallenge(ctx context.Context, id, userID uuid.UUID, channel Channel, codeHash []byte, expiresAt time.Time) error
 	ConsumeOTPChallenge(ctx context.Context, userID uuid.UUID, channel Channel, codeHash []byte) (bool, error)
 	IncrementOTPAttempts(ctx context.Context, userID uuid.UUID, channel Channel) (int16, error)

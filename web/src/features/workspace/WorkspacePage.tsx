@@ -103,8 +103,8 @@ function ResourceForm({
   return (
     <form onSubmit={submit} className="space-y-4">
       <p className="text-sm text-muted">
-        Shared with PharmaBoard members. Include accurate source details and only share content you
-        have permission to distribute.
+        Shared with {platform.name} members. Include accurate source details and only share content
+        you have permission to distribute.
       </p>
       <label className="block text-sm font-medium">
         Title
@@ -442,7 +442,7 @@ export function WorkspacePage({ kind }: { kind: ResourceKind }) {
                         {v.title}
                       </strong>
                       <span className="text-[10px] uppercase tracking-widest text-white/60">
-                        Sample lesson · PharmaBoard
+                        Sample lesson · {platform.name}
                       </span>
                     </div>
                   )}
@@ -693,7 +693,7 @@ export function WorkspacePage({ kind }: { kind: ResourceKind }) {
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
                 >
-                  Join in PharmaBoard
+                  Join in {platform.name}
                 </Button>
               ) : active.id.startsWith("00000000-") ? (
                 <p className="text-xs text-muted">

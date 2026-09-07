@@ -83,6 +83,33 @@ func (r *PostgresRepository) CreateOTPChallenge(ctx context.Context, id, userID 
 	return nil
 }
 
+// Serialize reservations per user across API replicas before requesting paid SMS.
+func (r *PostgresRepository) ReserveExternalOTP(ctx context.Context, id, userID uuid.UUID, channel Channel, codeHash []byte, expiresAt time.Time) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	var locked uuid.UUID
+	if err = tx.QueryRow(ctx, `SELECT id FROM users WHERE id=$1 FOR UPDATE`, userID).Scan(&locked); err != nil {
+		return err
+	}
+	var recent, hourly int
+	if err = tx.QueryRow(ctx, `SELECT count(*) FILTER (WHERE created_at > now()-interval '60 seconds'), count(*) FROM otp_challenges WHERE user_id=$1 AND channel=$2 AND created_at > now()-interval '1 hour'`, userID, channel).Scan(&recent, &hourly); err != nil {
+		return err
+	}
+	if recent > 0 || hourly >= 5 {
+		return ErrTooManyAttempts
+	}
+	if _, err = tx.Exec(ctx, `UPDATE otp_challenges SET consumed_at=now() WHERE user_id=$1 AND channel=$2 AND consumed_at IS NULL`, userID, channel); err != nil {
+		return err
+	}
+	if _, err = tx.Exec(ctx, `INSERT INTO otp_challenges(id,user_id,channel,code_hash,expires_at) VALUES($1,$2,$3,$4,$5)`, id, userID, channel, codeHash, expiresAt); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
 // ConsumeOTPChallenge atomically finds the newest unconsumed, unexpired
 // challenge for the user/channel and marks it consumed if the code matches.
 // It returns false without error when no matching challenge exists so the
@@ -93,12 +120,12 @@ func (r *PostgresRepository) ConsumeOTPChallenge(ctx context.Context, userID uui
 		SET consumed_at = now()
 		WHERE id = (
 			SELECT id FROM otp_challenges
-			WHERE user_id = $1 AND channel = $2 AND code_hash = $3
+			WHERE user_id = $1 AND channel = $2
 			  AND consumed_at IS NULL AND expires_at > now()
 			ORDER BY created_at DESC
 			LIMIT 1
 			FOR UPDATE
-		)`,
+		) AND consumed_at IS NULL AND expires_at > now() AND attempts <= 5 AND code_hash=$3`,
 		userID, string(channel), codeHash)
 	if err != nil {
 		return false, fmt.Errorf("identity: consume otp challenge: %w", err)

@@ -1,6 +1,6 @@
 import { PlatformBrand } from "@/components/ui/PlatformBrand";
 import { platform } from "@/lib/platform";
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 import { Button } from "@/components/ui/Button";
@@ -40,6 +40,9 @@ export function LoginPage() {
   const [code, setCode] = useState("");
   const [devCode, setDevCode] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [resendSeconds,setResendSeconds] = useState(0);
+  useEffect(()=>{if(resendSeconds<=0)return;const timer=setTimeout(()=>setResendSeconds(s=>Math.max(0,s-1)),1000);return()=>clearTimeout(timer);},[resendSeconds]);
+  async function resendCode(){setBusy(true);setError(null);try{const result=await requestOtp("phone",phone);setDevCode(result.dev_only_code??null);setCode(result.dev_only_code??"");setResendSeconds(60);}catch(err){setError(err);}finally{setBusy(false);}}
   const [error, setError] = useState<unknown>(null);
 
   async function openPreview() {
@@ -77,6 +80,7 @@ export function LoginPage() {
       const result = await requestOtp("phone", phone);
       setDevCode(result.dev_only_code ?? null);
       setCode(result.dev_only_code ?? "");
+      setResendSeconds(60);
       setStep("code");
     } catch (err) {
       setError(err);
@@ -277,6 +281,9 @@ export function LoginPage() {
                 label="Verification code"
                 placeholder="000000"
                 inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
+                minLength={6}
                 maxLength={6}
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
@@ -293,6 +300,7 @@ export function LoginPage() {
               <Button type="submit" loading={busy} className="w-full">
                 Verify and continue
               </Button>
+              <Button type="button" variant="secondary" disabled={busy || resendSeconds>0} onClick={resendCode} className="w-full">{resendSeconds>0 ? `Resend code in ${resendSeconds}s` : "Resend code"}</Button>
               <Button
                 type="button"
                 variant="quiet"
