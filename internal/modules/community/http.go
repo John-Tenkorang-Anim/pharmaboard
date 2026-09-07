@@ -23,6 +23,88 @@ func Routes(svc *Service, auth func(http.Handler) http.Handler) chi.Router {
 	})
 
 	r.Route("/posts/{id}", func(r chi.Router) {
+		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			u, ok := viewer(w, r)
+			if !ok {
+				return
+			}
+			id, ok := pathID(w, r)
+			if !ok {
+				return
+			}
+			p, err := svc.PostDetail(r.Context(), u.ID, id)
+			if err != nil {
+				writeServiceError(w, err)
+				return
+			}
+			writeJSON(w, http.StatusOK, postResponse(p))
+		})
+		r.Get("/comments", func(w http.ResponseWriter, r *http.Request) {
+			id, ok := pathID(w, r)
+			if !ok {
+				return
+			}
+			page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+			items, more, err := svc.Comments(r.Context(), id, page)
+			if err != nil {
+				writeServiceError(w, err)
+				return
+			}
+			out := []map[string]any{}
+			for _, c := range items {
+				out = append(out, map[string]any{"id": c.ID, "post_id": c.PostID, "parent_id": c.ParentID, "body": c.Body, "author": profileJSON(c.Author), "created_at": c.CreatedAt, "deleted": c.DeletedAt != nil})
+			}
+			writeJSON(w, http.StatusOK, map[string]any{"items": out, "has_more": more})
+		})
+		r.Put("/comments/{commentID}", func(w http.ResponseWriter, r *http.Request) {
+			u, ok := viewer(w, r)
+			if !ok {
+				return
+			}
+			id, ok := pathID(w, r)
+			if !ok {
+				return
+			}
+			commentID, err := uuid.Parse(chi.URLParam(r, "commentID"))
+			if err != nil {
+				problem.BadRequest(w, "invalid_id", "Invalid comment ID")
+				return
+			}
+			var input struct {
+				Body     string     `json:"body"`
+				ParentID *uuid.UUID `json:"parent_id"`
+			}
+			if json.NewDecoder(http.MaxBytesReader(w, r.Body, 8192)).Decode(&input) != nil {
+				problem.BadRequest(w, "invalid_json", "Invalid comment")
+				return
+			}
+			if err = svc.Comment(r.Context(), u.ID, id, commentID, input.ParentID, input.Body); err != nil {
+				writeServiceError(w, err)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]any{"id": commentID})
+		})
+		r.Delete("/comments/{commentID}", func(w http.ResponseWriter, r *http.Request) {
+			u, ok := viewer(w, r)
+			if !ok {
+				return
+			}
+			id, ok := pathID(w, r)
+			if !ok {
+				return
+			}
+			commentID, err := uuid.Parse(chi.URLParam(r, "commentID"))
+			if err != nil {
+				problem.BadRequest(w, "invalid_id", "Invalid comment ID")
+				return
+			}
+			if err = svc.DeleteComment(r.Context(), u.ID, id, commentID); err != nil {
+				writeServiceError(w, err)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+		})
+
 		r.Put("/reaction", setReactionHandler(svc, SubjectPost))
 		r.Delete("/reaction", setReactionHandler(svc, SubjectPost))
 		r.Post("/report", reportHandler(svc, SubjectPost))
@@ -94,7 +176,7 @@ func feedHandler(svc *Service) http.HandlerFunc {
 			scope = ScopeFollowing
 		}
 
-		posts, err := svc.Feed(r.Context(), user.ID, scope, before, limit)
+		posts, err := svc.Feed(r.Context(), user.ID, scope, before, limit, r.URL.Query().Get("q"))
 		if err != nil {
 			writeServiceError(w, err)
 			return
@@ -375,6 +457,7 @@ func postResponse(p FeedPost) map[string]any {
 		"body":           p.Body,
 		"author":         profileJSON(p.Author),
 		"reaction_count": p.ReactionCount,
+		"reply_count":    p.ReplyCount,
 		"viewer_reacted": p.ViewerReacted,
 		"viewer_follows": p.ViewerFollows,
 		"created_at":     p.CreatedAt,

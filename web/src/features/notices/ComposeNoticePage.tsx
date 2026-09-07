@@ -5,7 +5,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { TextInput, TextArea, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { SeverityChip, severityAccent } from "@/components/ui/Badge";
+import { SeverityChip } from "@/components/ui/Badge";
 import type { AudienceRule, NoticeSeverity } from "@/lib/types";
 import { useCreateNotice } from "./api";
 
@@ -89,8 +89,6 @@ export function ComposeNoticePage() {
             Severity sets how forcefully this notice presents itself in the register, and whether a
             second approver is required before it can publish.
           </p>
-          {/* Severity cells carry the same top accent the published notice
-              will, so the choice previews its own consequence. */}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {severities.map((option) => (
               <button
@@ -99,7 +97,6 @@ export function ComposeNoticePage() {
                 onClick={() => setSeverity(option)}
                 className={clsx(
                   "flex min-h-[4.5rem] flex-col items-start justify-between gap-2 border bg-surface px-3 py-3 text-left transition-colors",
-                  severityAccent(option),
                   severity === option ? "border-ink" : "border-hairline hover:border-divider",
                 )}
               >
@@ -138,7 +135,7 @@ export function ComposeNoticePage() {
           </div>
 
           {audienceMode === "filtered" && (
-            <div className="grid grid-cols-1 gap-4 border-l-2 border-hairline pl-5 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 border-t border-hairline pt-4 sm:grid-cols-3">
               <Select
                 id="accountKind"
                 label="Account kind"

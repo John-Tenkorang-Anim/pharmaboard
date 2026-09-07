@@ -11,8 +11,18 @@ import type {
 export function useNotices(publishedOnly: boolean) {
   return useQuery({
     queryKey: ["notices", { publishedOnly }],
-    queryFn: () =>
-      apiFetch<NoticeListResponse>(`/notices?published_only=${publishedOnly}&limit=100`),
+    queryFn: async () => {
+      const items: Notice[] = [];
+      let cursor = "";
+      // Follow the existing cursor API so search never silently stops at 100 notices.
+      while (true) {
+        const page = await apiFetch<NoticeListResponse>(`/notices?published_only=${publishedOnly}&limit=100${cursor ? `&after=${cursor}` : ""}`);
+        items.push(...page.items);
+        if (page.items.length < 100 || !page.next_cursor || page.next_cursor === cursor) break;
+        cursor = page.next_cursor;
+      }
+      return { items };
+    },
   });
 }
 

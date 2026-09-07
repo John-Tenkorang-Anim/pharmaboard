@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import type {
   DirectoryResponse,
@@ -30,6 +30,7 @@ export function useCreatePost(scope: FeedScope) {
         prev ? { ...prev, items: [post, ...prev.items] } : { items: [post] },
       );
       queryClient.invalidateQueries({ queryKey: ["feed"] });
+      queryClient.invalidateQueries({ queryKey: ["community-feed"] });
     },
   });
 }
@@ -107,7 +108,10 @@ export function useSetFollow() {
     onError: (_err, _vars, context) => {
       if (context?.previous) queryClient.setQueryData(context.key, context.previous);
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["feed"] }),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ["feed"] });
+      void queryClient.invalidateQueries({ queryKey: ["community-feed"] });
+    },
   });
 }
 
@@ -153,7 +157,7 @@ export function useReply(threadId: string | undefined) {
         method: "POST",
         body: { body },
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["forum", "thread", threadId] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["forum"] }),
   });
 }
 
@@ -165,6 +169,75 @@ export function useAcceptReply(threadId: string | undefined) {
         method: "PUT",
         body: { reply_id: replyId },
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["forum", "thread", threadId] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["forum"] }),
   });
+}
+
+export function useCommunityFeed(scope: FeedScope, search = "") {
+  return useInfiniteQuery({
+    queryKey: ["community-feed", scope, search],
+    initialPageParam: "",
+    queryFn: ({ pageParam }) =>
+      apiFetch<FeedResponse>(
+        `/community/feed?scope=${scope}&q=${encodeURIComponent(search)}&limit=20${pageParam ? `&before=${pageParam}` : ""}`,
+      ),
+    getNextPageParam: (last) => (last.items.length === 20 ? last.next_cursor : undefined),
+  });
+}
+export function usePost(id: string | undefined) {
+  return useQuery({
+    queryKey: ["post", id],
+    queryFn: () => apiFetch<FeedPost>(`/community/posts/${id}`),
+    enabled: !!id,
+  });
+}
+export interface PostComment {
+  id: string;
+  post_id: string;
+  parent_id: string | null;
+  body: string;
+  author: FeedPost["author"];
+  created_at: string;
+  deleted: boolean;
+}
+export function useComments(postId: string, enabled: boolean) {
+  return useInfiniteQuery({
+    queryKey: ["comments", postId],
+    refetchInterval: enabled ? 15000 : false,
+    refetchOnWindowFocus: true,
+    enabled,
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      apiFetch<{ items: PostComment[]; has_more: boolean }>(
+        `/community/posts/${postId}/comments?page=${pageParam}`,
+      ),
+    getNextPageParam: (last, _pages, page) => (last.has_more ? page + 1 : undefined),
+  });
+}
+export function usePostActions(postId: string) {
+  const client = useQueryClient();
+  const refresh = () => {
+    for (const key of ["feed", "community-feed", "post", "profile", "comments"])
+      void client.invalidateQueries({ queryKey: [key] });
+  };
+  const comment = useMutation({
+    mutationFn: (input: { id: string; body: string; parent_id: string | null }) =>
+      apiFetch(`/community/posts/${postId}/comments/${input.id}`, { method: "PUT", body: input }),
+    onSuccess: refresh,
+  });
+  const remove = useMutation({
+    mutationFn: (id: string) =>
+      apiFetch(`/community/posts/${postId}/comments/${id}`, { method: "DELETE" }),
+    onSuccess: refresh,
+  });
+  const react = useMutation({
+    mutationFn: (on: boolean) =>
+      apiFetch(`/community/posts/${postId}/reaction`, { method: on ? "PUT" : "DELETE" }),
+    onSuccess: refresh,
+  });
+  const report = useMutation({
+    mutationFn: (reason: string) =>
+      apiFetch(`/community/posts/${postId}/report`, { method: "POST", body: { reason } }),
+  });
+  return { comment, remove, react, report };
 }

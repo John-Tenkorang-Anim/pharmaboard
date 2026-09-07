@@ -8,7 +8,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { SkeletonPost } from "@/components/ui/Skeleton";
 import { VerificationChip } from "@/components/ui/Badge";
-import { useProfile, useSetFollow, useSetReaction } from "./api";
+import { useProfile, useSetFollow } from "./api";
+import { ProfilePortfolio } from "./ProfilePortfolio";
 import { PostCard } from "./PostCard";
 
 function Stat({ label, value }: { label: string; value: number }) {
@@ -24,7 +25,6 @@ export function ProfilePage() {
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, error } = useProfile(id);
   const setFollow = useSetFollow();
-  const setReaction = useSetReaction("everyone");
 
   if (isLoading) {
     return (
@@ -47,10 +47,10 @@ export function ProfilePage() {
 
   return (
     <AppShell width="narrow">
-      <Card className="mb-4 overflow-hidden">
-        <div className="h-28 bg-gradient-to-br from-accent-600 via-accent-700 to-accent-700" />
+      <Card className="social-card mb-5 overflow-hidden">
+        <div className="h-24 bg-slate-50" />
         <div className="px-6 pb-5">
-          <div className="-mt-12 flex items-end justify-between">
+          <div className="-mt-10 flex flex-wrap items-end justify-between gap-4">
             <Avatar
               name={profile.display_name}
               size="xl"
@@ -68,6 +68,7 @@ export function ProfilePage() {
                   <Button
                     variant={viewer_follows ? "secondary" : "primary"}
                     size="sm"
+                    disabled={setFollow.isPending}
                     onClick={() => setFollow.mutate({ userId: profile.id, on: !viewer_follows })}
                   >
                     {viewer_follows ? "Following" : "+ Follow"}
@@ -109,16 +110,14 @@ export function ProfilePage() {
         </div>
       </Card>
 
-      <h2 className="mb-3 px-1 text-sm font-bold text-muted">Recent activity</h2>
+      <ErrorBanner error={setFollow.error} />
+      <ProfilePortfolio key={profile.id} userId={profile.id} isSelf={is_self} />
+      <h2 className="mb-3 mt-8 px-1 text-sm font-bold text-muted">Recent activity</h2>
 
       {posts.length > 0 ? (
         <div className="space-y-3">
           {posts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              onToggleReaction={(postId, on) => setReaction.mutate({ postId, on })}
-            />
+            <PostCard key={post.id} post={post} />
           ))}
         </div>
       ) : (

@@ -1,41 +1,63 @@
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useId, useRef } from "react";
 import { X } from "lucide-react";
-
 export function Modal({
   open,
   onClose,
   title,
   children,
+  wide = false,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
+  wide?: boolean;
 }) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const heading = useId();
+  const close = useRef(onClose);
+  close.current = onClose;
   useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
+    const el = dialog.current;
+    if (!open || !el) return;
+    const previous = document.activeElement as HTMLElement | null;
+    el.showModal();
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      el.close();
+      document.body.style.overflow = overflow;
+      previous?.focus();
+    };
+  }, [open]);
   if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-ink/40" onClick={onClose} />
-      <div className="relative w-full max-w-lg animate-fade-in rounded-md bg-surface shadow-overlay">
-        <div className="flex items-center justify-between border-b border-hairline px-5 py-4">
-          <h2 className="text-base font-semibold text-ink">{title}</h2>
-          <button
-            onClick={onClose}
-            className="rounded p-1.5 text-faint transition-colors hover:bg-hairline/60 hover:text-ink"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
-        <div className="px-5 py-5">{children}</div>
+    <dialog
+      ref={dialog}
+      aria-labelledby={heading}
+      onCancel={(e) => {
+        e.preventDefault();
+        close.current();
+      }}
+      onClick={(e) => {
+        if (e.target === dialog.current) close.current();
+      }}
+      className={`m-auto max-h-[90dvh] w-[calc(100%-2rem)] ${wide ? "max-w-5xl" : "max-w-2xl"} overflow-y-auto rounded-md border-0 bg-white p-0 text-ink shadow-overlay backdrop:bg-ink/40`}
+    >
+      <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-hairline bg-white px-6 py-4">
+        <h2 id={heading} className="text-lg font-semibold">
+          {title}
+        </h2>
+        <button
+          type="button"
+          aria-label="Close dialog"
+          onClick={onClose}
+          className="rounded-lg p-2 text-muted hover:bg-canvas"
+        >
+          <X size={18} />
+        </button>
       </div>
-    </div>
+      <div className="px-6 py-5">{children}</div>
+    </dialog>
   );
 }

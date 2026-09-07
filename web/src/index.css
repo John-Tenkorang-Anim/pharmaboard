@@ -21,9 +21,8 @@
 }
 
 @layer components {
-  /* Plain and bordered, no shadow — the default surface for everything. */
   .card {
-    @apply rounded-lg border border-hairline bg-surface;
+    @apply bg-surface;
   }
 
   /* A table-like list: one bordered container, rows separated by a
@@ -31,7 +30,7 @@
      shape for any list of similar records (notices, threads, directory
      entries) — the pattern real dashboards use, not a stack of boxes. */
   .list-card {
-    @apply overflow-hidden rounded-lg border border-hairline bg-surface;
+    @apply overflow-hidden border-y border-hairline bg-surface;
   }
   .list-row {
     @apply block transition-colors hover:bg-accent-50/40;
@@ -51,15 +50,15 @@
     @apply size-[7px] shrink-0 rounded-full;
   }
 
-  /* The accent-pill segmented control used for feed/list filters. */
+  /* Underlined navigation for list filters. */
   .segment {
-    @apply inline-flex items-center gap-0.5 rounded-full bg-hairline/60 p-1;
+    @apply inline-flex items-center gap-3 border-b border-hairline;
   }
   .segment-item {
-    @apply rounded-full px-3.5 py-1.5 text-[0.8125rem] font-medium text-muted transition-colors;
+    @apply border-b-2 border-transparent px-1 py-2.5 text-[0.8125rem] font-medium text-muted transition-colors;
   }
   .segment-item[data-active="true"] {
-    @apply bg-accent-600 text-white;
+    @apply border-accent-600 text-accent-700;
   }
 
   .shimmer {
@@ -98,4 +97,27 @@
       transform: translateX(100%);
     }
   }
+}
+
+@layer components {
+  .workspace-heading {
+    @apply mb-8 flex flex-col justify-between gap-5 lg:flex-row lg:items-center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* White is an explicit surface requirement, independent of theme cache. */
+html, body, #root { background-color: #ffffff; }
+.bg-canvas { background-color: #ffffff; }
+
+@layer components {
+  .social-card { @apply rounded-2xl border border-slate-200/80 bg-white; box-shadow: 0 2px 8px rgb(20 35 55 / 0.035); }
+  .social-action { @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors hover:bg-slate-50 disabled:opacity-50; }
 }

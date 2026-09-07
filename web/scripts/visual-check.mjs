@@ -3,7 +3,7 @@
 // server and screenshots key screens so a human (or an agent) can confirm
 // the UI actually renders as intended, not just that it type-checks and
 // builds. Requires the API server (and, for the notices flow, the worker)
-// already running — see CLAUDE.md for how to start them.
+// already running — see docs/workspace.md for how to start them.
 import { chromium } from "playwright";
 import fs from "node:fs";
 

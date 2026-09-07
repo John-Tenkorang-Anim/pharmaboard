@@ -72,7 +72,7 @@ const (
 	ScopeFollowing FeedScope = "following"
 )
 
-func (s *Service) Feed(ctx context.Context, viewerID uuid.UUID, scope FeedScope, before uuid.UUID, limit int) ([]FeedPost, error) {
+func (s *Service) Feed(ctx context.Context, viewerID uuid.UUID, scope FeedScope, before uuid.UUID, limit int, search ...string) ([]FeedPost, error) {
 	if limit <= 0 || limit > 100 {
 		limit = 25
 	}
@@ -82,7 +82,14 @@ func (s *Service) Feed(ctx context.Context, viewerID uuid.UUID, scope FeedScope,
 		followingOf = &viewerID
 	}
 
-	posts, err := s.repo.FeedPage(ctx, followingOf, before, limit)
+	q := ""
+	if len(search) > 0 {
+		q = strings.TrimSpace(search[0])
+	}
+	if len(q) > 200 {
+		return nil, ErrValidation
+	}
+	posts, err := s.repo.FeedPage(ctx, followingOf, before, limit, q)
 	if err != nil {
 		return nil, err
 	}
@@ -374,4 +381,66 @@ func (s *Service) Report(ctx context.Context, reporterID uuid.UUID, subject Subj
 		ReporterID:  reporterID,
 		Reason:      reason,
 	})
+}
+
+func (s *Service) PostDetail(ctx context.Context, viewerID, postID uuid.UUID) (FeedPost, error) {
+	p, err := s.repo.GetPost(ctx, postID)
+	if err != nil {
+		return FeedPost{}, err
+	}
+	if p.HiddenAt != nil {
+		return FeedPost{}, ErrNotFound
+	}
+	authors, err := s.hydrateAuthors(ctx, []uuid.UUID{p.AuthorID})
+	if err != nil {
+		return FeedPost{}, err
+	}
+	reactions, err := s.repo.ReactedSubjects(ctx, SubjectPost, []uuid.UUID{postID}, viewerID)
+	if err != nil {
+		return FeedPost{}, err
+	}
+	return FeedPost{Post: p, Author: authors[p.AuthorID], ViewerReacted: reactions[postID]}, nil
+}
+func (s *Service) Comment(ctx context.Context, actorID, postID, id uuid.UUID, parent *uuid.UUID, body string) error {
+	body = strings.TrimSpace(body)
+	if body == "" || len(body) > 2000 || id == uuid.Nil {
+		return ErrValidation
+	}
+	return s.repo.CreatePostComment(ctx, PostComment{ID: id, PostID: postID, AuthorID: actorID, ParentID: parent, Body: body})
+}
+func (s *Service) Comments(ctx context.Context, postID uuid.UUID, page int) ([]PostCommentView, bool, error) {
+	p, err := s.repo.GetPost(ctx, postID)
+	if err != nil {
+		return nil, false, err
+	}
+	if p.HiddenAt != nil {
+		return nil, false, ErrNotFound
+	}
+	if page < 0 || page > 10000 {
+		return nil, false, ErrValidation
+	}
+	rows, err := s.repo.PostComments(ctx, postID, page*50, 51)
+	if err != nil {
+		return nil, false, err
+	}
+	more := len(rows) > 50
+	if more {
+		rows = rows[:50]
+	}
+	ids := []uuid.UUID{}
+	for _, c := range rows {
+		ids = append(ids, c.AuthorID)
+	}
+	authors, err := s.hydrateAuthors(ctx, ids)
+	if err != nil {
+		return nil, false, err
+	}
+	items := make([]PostCommentView, len(rows))
+	for i, c := range rows {
+		items[i] = PostCommentView{PostComment: c, Author: authors[c.AuthorID]}
+	}
+	return items, more, nil
+}
+func (s *Service) DeleteComment(ctx context.Context, actorID, postID, id uuid.UUID) error {
+	return s.repo.DeletePostComment(ctx, postID, id, actorID)
 }

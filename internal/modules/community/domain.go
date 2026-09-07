@@ -41,6 +41,7 @@ const (
 )
 
 type Post struct {
+	ReplyCount    int
 	ID            uuid.UUID
 	AuthorID      uuid.UUID
 	Body          string
@@ -120,3 +121,17 @@ var (
 	ErrSelfFollow    = errors.New("community: a member cannot follow themselves")
 	ErrAlreadyExists = errors.New("community: already exists")
 )
+
+type PostComment struct {
+	ID        uuid.UUID
+	PostID    uuid.UUID
+	AuthorID  uuid.UUID
+	ParentID  *uuid.UUID
+	Body      string
+	CreatedAt time.Time
+	DeletedAt *time.Time
+}
+type PostCommentView struct {
+	PostComment
+	Author identity.Profile
+}

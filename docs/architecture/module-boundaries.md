@@ -21,3 +21,7 @@ Rules:
 5. Platform packages contain infrastructure, not business rules.
 6. No `utils`, `common`, or catch-all shared business package.
 7. A database foreign key may preserve integrity across ownership boundaries, but only the owning module mutates the row.
+
+## Workspace extension
+
+`workspace` owns learning resources, career listings, scheduled sessions, and per-member saved/completion state. It may depend on identity only. See [workspace implementation](../workspace.md).

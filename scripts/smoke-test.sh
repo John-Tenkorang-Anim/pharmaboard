@@ -11,7 +11,7 @@
 # by themselves confirm. Run both.
 #
 # Requires: curl, jq. Requires `make run` and `make worker` (or the
-# no-Docker equivalents in CLAUDE.md) already running.
+# no-Docker equivalents in docs/workspace.md) already running.
 #
 # Safe to re-run: personas use fixed phone numbers so repeated runs reuse
 # the same accounts (register 409s are ignored) instead of accumulating

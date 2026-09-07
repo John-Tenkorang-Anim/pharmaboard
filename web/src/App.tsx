@@ -10,6 +10,12 @@ import { LoginPage } from "@/features/auth/LoginPage";
 const HomePage = lazy(() =>
   import("@/features/community/HomePage").then((m) => ({ default: m.HomePage })),
 );
+const CommunityPage = lazy(() =>
+  import("@/features/community/CommunityPage").then((m) => ({ default: m.CommunityPage })),
+);
+const PostPage = lazy(() =>
+  import("@/features/community/CommunityPage").then((m) => ({ default: m.PostPage })),
+);
 const ForumPage = lazy(() =>
   import("@/features/community/ForumPage").then((m) => ({ default: m.ForumPage })),
 );
@@ -38,6 +44,10 @@ const AdminPage = lazy(() =>
   import("@/features/admin/AdminPage").then((m) => ({ default: m.AdminPage })),
 );
 
+const WorkspacePage = lazy(() =>
+  import("@/features/workspace/WorkspacePage").then((m) => ({ default: m.WorkspacePage })),
+);
+
 function RouteFallback() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-canvas">
@@ -50,6 +60,33 @@ export function App() {
   return (
     <Suspense fallback={<RouteFallback />}>
       <Routes>
+        {(["learning", "jobs", "sessions"] as const).map((kind) => (
+          <Route
+            key={kind}
+            path={`/${kind}`}
+            element={
+              <RequireAuth>
+                <WorkspacePage key={kind} kind={kind} />
+              </RequireAuth>
+            }
+          />
+        ))}
+        <Route
+          path="/community"
+          element={
+            <RequireAuth>
+              <CommunityPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/community/posts/:id"
+          element={
+            <RequireAuth>
+              <PostPage />
+            </RequireAuth>
+          }
+        />
         <Route path="/login" element={<LoginPage />} />
 
         <Route

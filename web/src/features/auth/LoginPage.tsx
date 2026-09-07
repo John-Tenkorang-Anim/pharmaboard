@@ -37,6 +37,24 @@ export function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
 
+  async function openPreview() {
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await requestOtp("phone", "+233200880001");
+      if (!result.dev_only_code)
+        throw new Error(
+          "Preview is available only on the development server after sample content has been loaded.",
+        );
+      await verifyOtp("phone", "+233200880001", result.dev_only_code);
+      navigate((location.state as { from?: string } | null)?.from ?? "/home", { replace: true });
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleContactSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -83,7 +101,7 @@ export function LoginPage() {
 
         <div className="max-w-md">
           <p className="text-[1.75rem] font-semibold leading-[1.3] text-white">
-            Official notices, delivered to verified professionals — and provably so.
+            The place for your profession to connect, learn, and move forward.
           </p>
           <div className="mt-10 space-y-5 border-t border-white/15 pt-6">
             {PROOF_POINTS.map(({ title, body }) => (
@@ -109,7 +127,7 @@ export function LoginPage() {
             {step === "contact" ? "Sign in or register" : "Confirm your number"}
           </p>
           <h1 className="mt-2 text-2xl font-bold text-ink">
-            {step === "contact" ? "Access the register" : "Enter your code"}
+            {step === "contact" ? "Welcome to PharmaBoard" : "Enter your code"}
           </h1>
 
           {step === "contact" ? (
@@ -145,6 +163,22 @@ export function LoginPage() {
               <Button type="submit" loading={busy} className="w-full">
                 Continue
               </Button>
+              {import.meta.env.DEV && (
+                <div className="border-t border-hairline pt-5">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    loading={busy}
+                    onClick={openPreview}
+                    className="w-full"
+                  >
+                    Explore sample workspace
+                  </Button>
+                  <p className="mt-2 text-xs leading-5 text-muted">
+                    Development preview with sample colleagues, lessons, jobs, and meetings.
+                  </p>
+                </div>
+              )}
             </form>
           ) : (
             <form onSubmit={handleCodeSubmit} className="mt-8 space-y-5">

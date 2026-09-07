@@ -3,13 +3,10 @@ import { Check } from "lucide-react";
 import { initials } from "@/lib/format";
 import type { VerificationState } from "@/lib/types";
 
-// A flat, muted circular monogram — closer to the reference's small round
-// profile photos than a bright social-app gradient bubble. Tone is
-// deterministic per person but desaturated, never a gradient.
 const tones = [
   "bg-[#3A3D42] text-white",
   "bg-[#5B5D63] text-white",
-  "bg-[#1F7A46] text-white",
+  "bg-[#2463D4] text-white",
   "bg-[#3B5A78] text-white",
   "bg-[#6B5A3F] text-white",
   "bg-hairline text-ink",

@@ -1,5 +1,5 @@
 // Hand-written to match the backend's actual response shapes (verified live
-// against the running API — see CLAUDE.md's OpenAPI gap note). Two response
+// against the running API — see docs/workspace.md's OpenAPI gap note). Two response
 // conventions coexist server-side and both are reflected exactly here:
 // most handlers build an explicit snake_case map, but a few (DeliveryReport,
 // AuditEvent, the sync Entry) serialize a bare Go struct and therefore come
@@ -96,6 +96,7 @@ export type ConversationKind = "direct" | "group";
 export type MessageKind = "text" | "system";
 
 export interface Conversation {
+  members?: { id: string; name: string }[];
   id: string;
   kind: ConversationKind;
   title: string | null;
@@ -157,6 +158,7 @@ export interface PublicProfile {
 }
 
 export interface FeedPost {
+  reply_count: number;
   id: string;
   body: string;
   author: PublicProfile;

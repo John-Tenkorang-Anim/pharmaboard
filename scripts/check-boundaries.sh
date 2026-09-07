@@ -15,6 +15,7 @@ allowed_deps() {
     community) echo "identity" ;;
     sync)      echo "" ;;
     media)     echo "identity" ;;
+    workspace) echo "identity" ;;
     messaging) echo "identity" ;;
     admin)     echo "identity notices community" ;;
     *)         echo "" ;;

@@ -314,6 +314,7 @@ func conversationResponse(c Conversation) map[string]any {
 	return map[string]any{
 		"id":                c.ID,
 		"kind":              c.Kind,
+		"members":           c.Members,
 		"title":             c.Title,
 		"created_by":        c.CreatedBy,
 		"created_at":        c.CreatedAt,

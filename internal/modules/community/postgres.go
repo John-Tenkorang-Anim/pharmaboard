@@ -39,11 +39,11 @@ func subjectTable(s SubjectType) (string, error) {
 
 // --- posts / feed ----------------------------------------------------------
 
-const postColumns = `id, author_id, body, reaction_count, created_at, hidden_at`
+const postColumns = `id, author_id, body, reaction_count, created_at, hidden_at, (SELECT count(*) FROM post_comments pc WHERE pc.post_id=posts.id AND pc.deleted_at IS NULL)`
 
 func scanPost(row pgx.Row) (Post, error) {
 	var p Post
-	err := row.Scan(&p.ID, &p.AuthorID, &p.Body, &p.ReactionCount, &p.CreatedAt, &p.HiddenAt)
+	err := row.Scan(&p.ID, &p.AuthorID, &p.Body, &p.ReactionCount, &p.CreatedAt, &p.HiddenAt, &p.ReplyCount)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Post{}, ErrNotFound
 	}
@@ -77,9 +77,9 @@ func beforeClause(before uuid.UUID, args []any) (string, []any) {
 	return fmt.Sprintf(" AND p.id < $%d", len(args)), args
 }
 
-const aliasedPostColumns = `p.id, p.author_id, p.body, p.reaction_count, p.created_at, p.hidden_at`
+const aliasedPostColumns = `p.id, p.author_id, p.body, p.reaction_count, p.created_at, p.hidden_at, (SELECT count(*) FROM post_comments pc WHERE pc.post_id=p.id AND pc.deleted_at IS NULL)`
 
-func (r *PostgresRepository) FeedPage(ctx context.Context, followingOf *uuid.UUID, before uuid.UUID, limit int) ([]Post, error) {
+func (r *PostgresRepository) FeedPage(ctx context.Context, followingOf *uuid.UUID, before uuid.UUID, limit int, search string) ([]Post, error) {
 	var args []any
 	query := "SELECT " + aliasedPostColumns + " FROM posts p WHERE p.hidden_at IS NULL"
 
@@ -88,6 +88,11 @@ func (r *PostgresRepository) FeedPage(ctx context.Context, followingOf *uuid.UUI
 		query += fmt.Sprintf(`
 			AND (p.author_id = $%d OR p.author_id IN (
 				SELECT followee_id FROM follows WHERE follower_id = $%d))`, len(args), len(args))
+	}
+
+	if search != "" {
+		args = append(args, search)
+		query += fmt.Sprintf(" AND to_tsvector('english',p.body) @@ plainto_tsquery('english',$%d)", len(args))
 	}
 
 	clause, args := beforeClause(before, args)
@@ -436,6 +441,76 @@ func (r *PostgresRepository) Hide(ctx context.Context, subject SubjectType, subj
 	}
 	if tag.RowsAffected() == 0 {
 		return ErrNotFound
+	}
+	return nil
+}
+
+// Comments are one-level threads. A composite foreign key prevents replies
+// from referencing a comment on a different post, even under concurrency.
+func (r *PostgresRepository) CreatePostComment(ctx context.Context, c PostComment) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	var visible bool
+	if err = tx.QueryRow(ctx, `SELECT hidden_at IS NULL FROM posts WHERE id=$1 FOR SHARE`, c.PostID).Scan(&visible); errors.Is(err, pgx.ErrNoRows) {
+		return ErrNotFound
+	} else if err != nil {
+		return err
+	}
+	if !visible {
+		return ErrNotFound
+	}
+	if c.ParentID != nil {
+		var root bool
+		err = tx.QueryRow(ctx, `SELECT parent_id IS NULL FROM post_comments WHERE id=$1 AND post_id=$2`, *c.ParentID, c.PostID).Scan(&root)
+		if errors.Is(err, pgx.ErrNoRows) || err == nil && !root {
+			return ErrValidation
+		}
+		if err != nil {
+			return err
+		}
+	}
+	tag, err := tx.Exec(ctx, `INSERT INTO post_comments(id,post_id,author_id,parent_id,body) VALUES($1,$2,$3,$4,$5) ON CONFLICT(id) DO NOTHING`, c.ID, c.PostID, c.AuthorID, c.ParentID, c.Body)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		var same bool
+		err = tx.QueryRow(ctx, `SELECT post_id=$2 AND author_id=$3 AND body=$4 AND parent_id IS NOT DISTINCT FROM $5::uuid AND deleted_at IS NULL FROM post_comments WHERE id=$1`, c.ID, c.PostID, c.AuthorID, c.Body, c.ParentID).Scan(&same)
+		if err != nil {
+			return err
+		}
+		if !same {
+			return ErrAlreadyExists
+		}
+	}
+	return tx.Commit(ctx)
+}
+func (r *PostgresRepository) PostComments(ctx context.Context, postID uuid.UUID, offset, limit int) ([]PostComment, error) {
+	rows, err := r.pool.Query(ctx, `SELECT id,post_id,author_id,parent_id,CASE WHEN deleted_at IS NULL THEN body ELSE '' END,created_at,deleted_at FROM post_comments WHERE post_id=$1 ORDER BY created_at,id OFFSET $2 LIMIT $3`, postID, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PostComment{}
+	for rows.Next() {
+		var c PostComment
+		if err = rows.Scan(&c.ID, &c.PostID, &c.AuthorID, &c.ParentID, &c.Body, &c.CreatedAt, &c.DeletedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, c)
+	}
+	return items, rows.Err()
+}
+func (r *PostgresRepository) DeletePostComment(ctx context.Context, postID, commentID, actorID uuid.UUID) error {
+	tag, err := r.pool.Exec(ctx, `UPDATE post_comments SET deleted_at=COALESCE(deleted_at,now()),body='[removed]' WHERE id=$1 AND post_id=$2 AND author_id=$3`, commentID, postID, actorID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrForbidden
 	}
 	return nil
 }

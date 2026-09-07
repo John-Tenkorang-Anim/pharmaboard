@@ -8,12 +8,16 @@ import (
 
 // Repository is the persistence port for the community module.
 type Repository interface {
+	CreatePostComment(context.Context, PostComment) error
+	PostComments(context.Context, uuid.UUID, int, int) ([]PostComment, error)
+	DeletePostComment(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) error
+
 	CreatePost(ctx context.Context, p Post) error
 	GetPost(ctx context.Context, id uuid.UUID) (Post, error)
 	// FeedPage returns visible posts newest-first. When followingOf is set,
 	// the page is restricted to authors that user follows (plus their own
 	// posts) — fan-out on read, per docs/technical-design.md section 20.
-	FeedPage(ctx context.Context, followingOf *uuid.UUID, before uuid.UUID, limit int) ([]Post, error)
+	FeedPage(ctx context.Context, followingOf *uuid.UUID, before uuid.UUID, limit int, search string) ([]Post, error)
 	PostsByAuthor(ctx context.Context, authorID uuid.UUID, before uuid.UUID, limit int) ([]Post, error)
 
 	Follow(ctx context.Context, followerID, followeeID uuid.UUID) error

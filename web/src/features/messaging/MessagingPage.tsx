@@ -6,9 +6,11 @@ import {
   Plus,
   Send,
   Video,
-  ShieldAlert,
+  ArrowLeft,
   Users as UsersIcon,
   Lock,
+  Search,
+  Link2,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Avatar } from "@/components/ui/Avatar";
@@ -27,11 +29,17 @@ import {
   useSendMessage,
   useStartCall,
 } from "./api";
+import { MeetingRoom } from "./MeetingRoom";
 import { NewConversationModal } from "./NewConversationModal";
 
-function conversationLabel(conversation: Conversation): string {
+function conversationLabel(conversation: Conversation, viewerId?: string): string {
   if (conversation.kind === "group") return conversation.title ?? "Group conversation";
-  return "Direct message";
+  return (
+    conversation.members
+      ?.filter((m) => m.id !== viewerId)
+      .map((m) => m.name)
+      .join(", ") || "Direct message"
+  );
 }
 
 function ConversationListItem({
@@ -43,6 +51,7 @@ function ConversationListItem({
   active: boolean;
   onClick: () => void;
 }) {
+  const { user } = useAuth();
   return (
     <button
       onClick={onClick}
@@ -52,11 +61,11 @@ function ConversationListItem({
       )}
     >
       {conversation.kind === "group" ? (
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-navy-400 to-navy-600 text-white">
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-accent-600 text-white">
           <UsersIcon className="size-5" />
         </div>
       ) : (
-        <Avatar name={conversationLabel(conversation)} size="md" />
+        <Avatar name={conversationLabel(conversation, user?.id)} size="md" />
       )}
       <div className="min-w-0 flex-1">
         <p
@@ -65,7 +74,7 @@ function ConversationListItem({
             active ? "font-bold" : "font-semibold",
           )}
         >
-          {conversationLabel(conversation)}
+          {conversationLabel(conversation, user?.id)}
         </p>
         <p className="truncate text-[0.8125rem] text-faint">
           {conversation.last_message_at
@@ -77,12 +86,32 @@ function ConversationListItem({
   );
 }
 
-function MessageBubble({ message, isOwn }: { message: Message; isOwn: boolean }) {
+function MessageBubble({
+  message,
+  isOwn,
+  onJoin,
+  senderName,
+}: {
+  senderName?: string;
+  message: Message;
+  isOwn: boolean;
+  onJoin: (url: string) => void;
+}) {
   if (message.kind === "system") {
     return (
       <div className="flex justify-center py-2">
-        <span className="rounded-full border border-hairline bg-canvas px-3 py-1 text-xs text-faint">
+        <span className="rounded-md bg-slate-50 px-3 py-1 text-xs text-faint">
           {message.body}
+          {message.body.match(/https:\/\/meet\.jit\.si\/[A-Za-z0-9-]+/) && (
+            <button
+              className="ml-3 font-semibold text-accent-600 underline"
+              onClick={() =>
+                onJoin(message.body.match(/https:\/\/meet\.jit\.si\/[A-Za-z0-9-]+/)![0])
+              }
+            >
+              Join meeting
+            </button>
+          )}
         </span>
       </div>
     );
@@ -98,7 +127,10 @@ function MessageBubble({ message, isOwn }: { message: Message; isOwn: boolean })
             : "rounded-bl-md bg-surface text-ink border border-hairline",
         )}
       >
-        <p className="whitespace-pre-wrap">{message.body}</p>
+        {!isOwn && (
+          <p className="mb-1 text-xs font-semibold text-accent-700">{senderName ?? "Member"}</p>
+        )}
+        <p className="whitespace-pre-wrap break-words">{message.body}</p>
         <p className={clsx("mt-1 text-[0.625rem]", isOwn ? "text-hairline" : "text-faint")}>
           {formatTime(message.created_at)}
         </p>
@@ -110,10 +142,13 @@ function MessageBubble({ message, isOwn }: { message: Message; isOwn: boolean })
 function ThreadView({ conversationId }: { conversationId: string }) {
   const { user } = useAuth();
   const { data: conversation } = useConversation(conversationId);
-  const { messages, isLoading } = useMessages(conversationId);
+  const { messages, isLoading, error: messagesError } = useMessages(conversationId);
   const sendMessage = useSendMessage(conversationId);
   const startCall = useStartCall(conversationId);
   const [draft, setDraft] = useState("");
+  const [tab, setTab] = useState<"chat" | "resources">("chat");
+  const [search, setSearch] = useState("");
+  const [room, setRoom] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -122,23 +157,31 @@ function ThreadView({ conversationId }: { conversationId: string }) {
 
   async function handleSend(e: FormEvent) {
     e.preventDefault();
-    if (!draft.trim()) return;
+    if (!draft.trim() || sendMessage.isPending) return;
     const body = draft;
-    setDraft("");
-    await sendMessage.mutateAsync(body);
+    try {
+      await sendMessage.mutateAsync(body);
+      setDraft("");
+    } catch {
+      /* Keep draft available for retry. */
+    }
   }
 
   async function handleStartCall() {
-    const call = await startCall.mutateAsync();
-    window.open(call.room_url, "_blank", "noopener,noreferrer");
+    try {
+      const call = await startCall.mutateAsync();
+      setRoom(call.room_url);
+    } catch {
+      /* Shown below. */
+    }
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col overflow-y-auto">
       <div className="flex items-center justify-between gap-4 border-b border-hairline px-5 py-3">
         <div className="min-w-0">
           <p className="text-[0.9375rem] font-bold text-ink">
-            {conversation ? conversationLabel(conversation) : "Conversation"}
+            {conversation ? conversationLabel(conversation, user?.id) : "Conversation"}
           </p>
           <p className="flex items-center gap-1 text-[0.8125rem] text-faint">
             <Lock className="size-3" />
@@ -151,11 +194,65 @@ function ThreadView({ conversationId }: { conversationId: string }) {
         </Button>
       </div>
 
+      <div className="flex flex-wrap items-center gap-3 border-b border-hairline px-4 py-2">
+        <button
+          onClick={() => setTab("chat")}
+          aria-pressed={tab === "chat"}
+          className={`rounded-lg px-3 py-2 text-xs font-medium ${tab === "chat" ? "bg-accent-50 text-accent-700" : "text-muted"}`}
+        >
+          Conversation
+        </button>
+        <button
+          onClick={() => setTab("resources")}
+          aria-pressed={tab === "resources"}
+          className={`rounded-lg px-3 py-2 text-xs font-medium ${tab === "resources" ? "bg-accent-50 text-accent-700" : "text-muted"}`}
+        >
+          Shared links
+        </button>
+        <label className="relative ml-auto">
+          <Search size={13} className="absolute left-2 top-2 text-muted" />
+          <input
+            aria-label="Search messages"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search conversation"
+            className="w-40 rounded border border-hairline py-1.5 pl-7 pr-2 text-xs"
+          />
+        </label>
+      </div>
+      {room && <MeetingRoom url={room} title="Team meeting" onLeave={() => setRoom(null)} />}
+      <ErrorBanner error={messagesError || startCall.error} />
       <div
         ref={scrollRef}
         className="scrollbar-thin flex-1 space-y-2.5 overflow-y-auto bg-canvas px-5 py-4"
       >
-        {isLoading ? (
+        {tab === "resources" ? (
+          <div className="space-y-3">
+            {Array.from(
+              new Set(
+                messages
+                  .filter(
+                    (m) => m.kind === "text" && m.body.toLowerCase().includes(search.toLowerCase()),
+                  )
+                  .flatMap((m) => m.body.match(/https:\/\/[^\s<>]+/g) ?? []),
+              ),
+            ).map((url) => (
+              <a
+                key={url}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 break-all rounded-lg border border-hairline bg-white p-4 text-sm text-accent-700"
+              >
+                <Link2 size={18} className="shrink-0" />
+                {url}
+              </a>
+            ))}
+            <p className="text-xs text-muted">
+              HTTPS links shared in this conversation appear here automatically.
+            </p>
+          </div>
+        ) : isLoading ? (
           <SkeletonList rows={3} />
         ) : messages.length === 0 ? (
           <EmptyState
@@ -164,24 +261,27 @@ function ThreadView({ conversationId }: { conversationId: string }) {
             description="Say hello to start the conversation."
           />
         ) : (
-          messages.map((m) => (
-            <MessageBubble key={m.id} message={m} isOwn={m.sender_id === user?.id} />
-          ))
+          messages
+            .filter((m) => m.body.toLowerCase().includes(search.toLowerCase()))
+            .map((m) => (
+              <MessageBubble
+                key={m.id}
+                message={m}
+                isOwn={m.sender_id === user?.id}
+                senderName={conversation?.members?.find((p) => p.id === m.sender_id)?.name}
+                onJoin={setRoom}
+              />
+            ))
         )}
       </div>
-
-      {startCall.data && (
-        <div className="flex items-start gap-2 border-t border-amber-50 bg-amber-50 px-5 py-2.5 text-[0.8125rem] text-amber-800">
-          <ShieldAlert className="mt-0.5 size-3.5 shrink-0" />
-          {startCall.data.provider_notice}
-        </div>
-      )}
 
       <form
         onSubmit={handleSend}
         className="flex items-end gap-2 border-t border-hairline bg-surface p-3"
       >
         <textarea
+          aria-label="Message"
+          maxLength={4000}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
@@ -195,10 +295,11 @@ function ThreadView({ conversationId }: { conversationId: string }) {
           className="max-h-32 flex-1 resize-none rounded-lg border border-hairline bg-canvas px-4 py-2.5 text-sm transition-colors placeholder:text-faint focus-visible:border-accent-600 focus-visible:bg-surface focus-visible:outline-none"
         />
         <Button
+          aria-label="Send message"
           type="submit"
           loading={sendMessage.isPending}
           disabled={!draft.trim()}
-          className="rounded-full !px-3"
+          className="!px-3"
         >
           <Send className="size-4" />
         </Button>
@@ -231,8 +332,23 @@ export function MessagingPage() {
         </Button>
       </div>
 
-      <Card className="flex h-[calc(100vh-15rem)] overflow-hidden p-0">
-        <aside className="flex w-72 shrink-0 flex-col border-r border-hairline">
+      {conversationId && (
+        <Button
+          className="mb-3 md:hidden"
+          variant="secondary"
+          onClick={() => navigate("/messaging")}
+        >
+          <ArrowLeft size={15} />
+          All conversations
+        </Button>
+      )}
+      <Card className="flex min-h-[520px] h-[calc(100dvh-15rem)] overflow-hidden p-0">
+        <aside
+          className={clsx(
+            "w-full md:w-64 shrink-0 flex-col border-r border-hairline",
+            conversationId ? "hidden md:flex" : "flex",
+          )}
+        >
           <div className="scrollbar-thin flex-1 overflow-y-auto">
             {error != null && (
               <div className="p-4">
@@ -258,9 +374,9 @@ export function MessagingPage() {
           </div>
         </aside>
 
-        <div className="min-w-0 flex-1">
+        <div className={clsx("min-w-0 flex-1", !conversationId && "hidden md:block")}>
           {conversationId ? (
-            <ThreadView conversationId={conversationId} />
+            <ThreadView key={conversationId} conversationId={conversationId} />
           ) : (
             <div className="flex h-full items-center justify-center">
               <EmptyState

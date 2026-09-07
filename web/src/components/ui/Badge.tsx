@@ -42,24 +42,6 @@ export function SeverityChip({ severity }: { severity: NoticeSeverity }) {
   );
 }
 
-/**
- * Severity is still structural, not just a marker: a left rule on the
- * notice's own card, thicker and more saturated the more severe it is —
- * this pairs with `severityStyles` above and both must stay in sync.
- */
-export function severityAccent(severity: NoticeSeverity): string {
-  switch (severity) {
-    case "critical":
-      return "border-l-4 border-l-severity-critical";
-    case "urgent":
-      return "border-l-4 border-l-severity-urgent";
-    case "advisory":
-      return "border-l-2 border-l-severity-advisory";
-    case "info":
-      return "border-l-2 border-l-severity-info";
-  }
-}
-
 const stateStyles: Record<NoticeState, { dot: string; text: string }> = {
   draft: { dot: "bg-faint", text: "text-muted" },
   in_review: { dot: "bg-severity-advisory", text: "text-severity-advisory" },

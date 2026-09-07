@@ -45,7 +45,7 @@ migrate-down: ## Roll back all database migrations in reverse order
 		psql "$$PHARMABOARD_DATABASE_URL" -v ON_ERROR_STOP=1 -f "$$f"; \
 	done
 
-up: ## Start local dependencies (requires Docker; see CLAUDE.md for a no-Docker alternative)
+up: ## Start local dependencies (requires Docker; see docs/workspace.md for a no-Docker alternative)
 	docker compose up -d --wait
 
 down: ## Stop local dependencies

@@ -11,10 +11,6 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
 }
 
-// Primary carries the product's one accent colour — a confident, muted
-// green — not solid black. A previous pass made every primary control
-// black chrome; walked back after feedback that it read as an unrelated
-// reference product rather than this one's own identity.
 const variantClasses: Record<Variant, string> = {
   primary: "bg-accent-600 text-white hover:bg-accent-700 disabled:bg-hairline disabled:text-faint",
   secondary:
@@ -37,7 +33,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       ref={ref}
       disabled={disabled || loading}
       className={clsx(
-        "inline-flex items-center justify-center rounded-full font-medium transition-colors duration-100",
+        "inline-flex items-center justify-center rounded-md font-medium transition-colors duration-100",
         "disabled:cursor-not-allowed",
         variantClasses[variant],
         sizeClasses[size],

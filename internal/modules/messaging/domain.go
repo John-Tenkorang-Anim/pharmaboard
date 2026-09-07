@@ -36,7 +36,13 @@ const (
 	KindGroup  ConversationKind = "group"
 )
 
+type Member struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
 type Conversation struct {
+	Members       []Member
 	ID            uuid.UUID
 	Kind          ConversationKind
 	Title         *string

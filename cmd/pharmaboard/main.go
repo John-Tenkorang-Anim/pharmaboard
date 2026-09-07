@@ -19,6 +19,7 @@ import (
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/messaging"
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/notices"
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/sync"
+	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/workspace"
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/platform/changelog"
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/platform/config"
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/platform/httpserver"
@@ -82,7 +83,7 @@ func wire(pool *pgxpool.Pool, cfg config.Config) modules {
 	syncSvc := sync.NewService(pool)
 
 	messagingRepo := messaging.NewPostgresRepository(pool)
-	messagingSvc := messaging.NewService(messagingRepo)
+	messagingSvc := messaging.NewService(messagingRepo, identitySvc)
 
 	communityRepo := community.NewPostgresRepository(pool)
 	communitySvc := community.NewService(communityRepo, identitySvc)
@@ -114,10 +115,11 @@ func serve(ctx context.Context, cfg config.Config) error {
 	router.Mount("/sync", sync.Routes(mods.sync, auth))
 	router.Mount("/messaging", messaging.Routes(mods.messaging, auth))
 	router.Mount("/community", community.Routes(mods.community, auth))
+	router.Mount("/workspace", workspace.Routes(pool, auth))
 	router.Mount("/users", identity.DirectoryRoutes(mods.identity, auth))
 
 	slog.Info("pharmaboard API composed", "routes", []string{
-		"/v1/auth", "/v1/users", "/v1/notices", "/v1/admin", "/v1/sync", "/v1/messaging", "/v1/community",
+		"/v1/auth", "/v1/users", "/v1/notices", "/v1/admin", "/v1/sync", "/v1/messaging", "/v1/community", "/v1/workspace",
 	})
 	return httpserver.Run(ctx, cfg, router)
 }

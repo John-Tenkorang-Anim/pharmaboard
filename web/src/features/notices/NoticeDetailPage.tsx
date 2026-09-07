@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import clsx from "clsx";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -13,7 +12,7 @@ import {
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/Card";
-import { SeverityChip, StateChip, severityAccent } from "@/components/ui/Badge";
+import { SeverityChip, StateChip } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { Modal } from "@/components/ui/Modal";
@@ -42,8 +41,8 @@ import {
 function Figure({ label, value }: { label: string; value: number }) {
   return (
     <div className="px-4 py-3 first:pl-0">
-      <p className="tnum text-3xl font-semibold text-ink">{value}</p>
-      <p className="eyebrow mt-0.5">{label}</p>
+      <p className="text-xs text-muted">{label}</p>
+      <p className="tnum mt-1 text-lg font-semibold text-ink">{value}</p>
     </div>
   );
 }
@@ -65,7 +64,12 @@ export function NoticeDetailPage() {
   const acknowledge = useAcknowledgeNotice();
 
   const actionError =
-    submit.error || requestChanges.error || approve.error || publish.error || withdraw.error;
+    submit.error ||
+    requestChanges.error ||
+    approve.error ||
+    publish.error ||
+    withdraw.error ||
+    acknowledge.error;
 
   if (isLoading) {
     return (
@@ -111,13 +115,13 @@ export function NoticeDetailPage() {
         Notices
       </Link>
 
-      <Card className={clsx("mb-4", severityAccent(notice.severity))}>
+      <Card className="social-card mb-4">
         <CardBody>
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <SeverityChip severity={notice.severity} />
             <StateChip state={notice.state} />
           </div>
-          <h1 className="text-3xl font-semibold leading-snug text-ink">{notice.title}</h1>
+          <h1 className="text-2xl font-semibold leading-snug text-ink">{notice.title}</h1>
           <p className="mt-1.5 text-[0.8125rem] text-faint">
             {notice.published_at
               ? `Published ${formatRelative(notice.published_at)}`
@@ -141,7 +145,7 @@ export function NoticeDetailPage() {
           </div>
 
           {notice.withdrawn_at && (
-            <div className="mt-4 border-l-2 border-severity-critical py-2 pl-3">
+            <div className="mt-4 border-t border-hairline py-3">
               <p className="text-[0.8125rem] font-semibold text-severity-critical">Withdrawn</p>
               <p className="mt-1 text-[0.8125rem] text-muted">
                 Withdrawn {formatDateTime(notice.withdrawn_at)}. Delivery evidence is retained.
@@ -157,7 +161,7 @@ export function NoticeDetailPage() {
         </div>
       )}
 
-      <Card className="mb-4">
+      <Card className="mb-5">
         <CardBody className="flex flex-wrap items-center gap-3">
           {notice.state === "draft" && (
             <Button
@@ -210,10 +214,11 @@ export function NoticeDetailPage() {
               <Button
                 variant="secondary"
                 loading={acknowledge.isPending}
+                disabled={acknowledge.isSuccess}
                 onClick={() => acknowledge.mutate(notice.id)}
               >
                 <CheckCircle2 className="size-4" />
-                Acknowledge
+                {acknowledge.isSuccess ? "Acknowledged" : "Acknowledge"}
               </Button>
               <Button variant="ghost" onClick={() => setWithdrawOpen(true)}>
                 Withdraw
@@ -252,6 +257,8 @@ export function NoticeDetailPage() {
                     ` ${report.data.AttemptsFailed} attempt(s) failed and were retried automatically.`}
                 </p>
               </>
+            ) : report.error ? (
+              <ErrorBanner error={report.error} />
             ) : (
               <div className="flex items-center gap-2 text-sm text-faint">
                 <Loader2 className="size-4 animate-spin" />

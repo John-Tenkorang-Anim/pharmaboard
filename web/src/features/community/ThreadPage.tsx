@@ -25,8 +25,7 @@ export function ThreadPage() {
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (!body.trim()) return;
-    await reply.mutateAsync(body);
-    setBody("");
+    try { await reply.mutateAsync(body); setBody(""); } catch { /* Keep draft for retry. */ }
   }
 
   if (isLoading) {
@@ -66,7 +65,7 @@ export function ThreadPage() {
         Rx Forum
       </Link>
 
-      <Card className="mb-4">
+      <Card className="social-card mb-6">
         <CardBody>
           <div className="flex items-start gap-3">
             <Avatar
@@ -100,7 +99,7 @@ export function ThreadPage() {
         </CardBody>
       </Card>
 
-      <h2 className="mb-3 px-1 text-sm font-bold text-muted">
+      <ErrorBanner error={acceptReply.error} /><h2 className="mb-3 px-1 text-sm font-bold text-muted">
         {replies.length} {replies.length === 1 ? "answer" : "answers"}
       </h2>
 
@@ -108,7 +107,7 @@ export function ThreadPage() {
         {ordered.map((r) => (
           <Card
             key={r.id}
-            className={clsx("transition-colors", r.accepted && "border-accent-600 bg-accent-50")}
+            className={clsx("social-card transition-colors", r.accepted && "border-accent-600 bg-accent-50")}
           >
             <CardBody>
               {r.accepted && (
@@ -145,6 +144,7 @@ export function ThreadPage() {
                     </span>
                     {isAsker && !r.accepted && (
                       <button
+                        disabled={acceptReply.isPending}
                         onClick={() => acceptReply.mutate(r.id)}
                         className="text-[0.8125rem] font-semibold text-accent-700 transition-colors hover:text-accent-700"
                       >

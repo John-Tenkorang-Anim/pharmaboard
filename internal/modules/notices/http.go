@@ -17,7 +17,7 @@ import (
 // Routes mounts the notices module's HTTP surface. Every route requires an
 // authenticated session; role checks beyond "is a recognized user" (e.g.
 // "may approve") are deferred to the admin module's role grants and noted
-// as a gap in CLAUDE.md.
+// as a gap in docs/workspace.md.
 func Routes(svc *Service, auth func(http.Handler) http.Handler) chi.Router {
 	r := chi.NewRouter()
 	r.Use(auth)

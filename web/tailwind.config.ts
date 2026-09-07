@@ -1,14 +1,5 @@
 import type { Config } from "tailwindcss";
 
-// PharmaBoard — a professional, industry-shaped system: a plain light
-// canvas, one confident accent colour that actually carries the product's
-// interactive identity (not just a verification checkmark), a horizontal
-// top nav, and plain divided list rows instead of stacked, individually
-// bordered/accent-barred cards. Two things were tried and walked back:
-// a full black-chrome, vertical-icon-rail clone of a specific reference
-// product (too literal, too monochrome), and a list pattern where every
-// row was its own rounded card with a coloured left bar (reads as boxes,
-// not as the dense tables real dashboards use).
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
@@ -16,33 +7,24 @@ export default {
       fontFamily: {
         sans: ["IBM Plex Sans", "-apple-system", "Segoe UI", "sans-serif"],
         mono: ["IBM Plex Mono", "ui-monospace", "SFMono-Regular", "monospace"],
-        // Tailwind ships a default `font-serif` (Georgia/Times) even though
-        // this only extends the theme — override it explicitly to the sans
-        // stack so a stray `font-serif` class (a leftover from an earlier
-        // design pass) fails visibly-as-sans, not silently as a real serif.
         serif: ["IBM Plex Sans", "-apple-system", "Segoe UI", "sans-serif"],
       },
       colors: {
-        // A soft, faintly green-tinted off-white — not a neutral gray, and
-        // not the black-dominant chrome of the previous pass.
-        canvas: "#F6F9F7",
+        canvas: "#FFFFFF",
         surface: "#FFFFFF",
-        ink: "#151A17",
-        muted: "#5C655F",
-        faint: "#8B958E",
-        hairline: "#DEE6E1",
-        divider: "#C7D1CA",
+        ink: "#20252B",
+        muted: "#5D6672",
+        faint: "#6C7581",
+        hairline: "#E4E7EB",
+        divider: "#CED4DC",
 
-        // The accent now carries the product's actual interactive identity
-        // — primary buttons, active nav, links, verification — not just a
-        // small checkmark against black chrome.
         accent: {
-          50: "#EAF5EE",
-          100: "#D2ECDC",
-          400: "#3F9464",
-          600: "#1F7A46",
-          700: "#166238",
-          900: "#0E2A1B",
+          50: "#EFF5FF",
+          100: "#DBEAFE",
+          400: "#60A5FA",
+          600: "#2463D4",
+          700: "#1D4FA7",
+          900: "#182336",
         },
 
         severity: {

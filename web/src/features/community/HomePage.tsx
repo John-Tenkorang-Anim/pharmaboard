@@ -1,250 +1,271 @@
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Copy, Check } from "lucide-react";
+import {
+  ArrowUpRight,
+  CalendarDays,
+  GraduationCap,
+  Users,
+  Bookmark,
+  Video,
+  BriefcaseBusiness,
+  Bell,
+} from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
-import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
-import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/Card";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { SkeletonPost } from "@/components/ui/Skeleton";
-import { VerificationChip, SeverityChip } from "@/components/ui/Badge";
 import { useAuth } from "@/features/auth/AuthContext";
+import { useResources, meetingCode } from "@/features/workspace/api";
 import { useNotices } from "@/features/notices/api";
+import { SeverityChip } from "@/components/ui/Badge";
 import { formatRelative } from "@/lib/format";
-import { useCreatePost, useFeed, useSetReaction, useThreads, type FeedScope } from "./api";
+import { useFeed } from "./api";
 import { PostCard } from "./PostCard";
-
-/**
- * The profile rail. It shows only what the system can actually attest to —
- * verification state, account kind, the member's own ID — nothing invented.
- */
-function ProfileRail() {
+import { PostComposer } from "./CommunityPage";
+export function HomePage() {
   const { user } = useAuth();
-  const [copied, setCopied] = useState(false);
-  if (!user) return null;
-
-  async function copyId() {
-    if (!user) return;
-    await navigator.clipboard.writeText(user.id);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1600);
-  }
-
-  return (
-    <Card>
-      <CardBody className="flex flex-col items-center text-center">
-        <Avatar name={user.display_name} size="lg" verification={user.verification_state} />
-        <Link
-          to={`/people/${user.id}`}
-          className="mt-3 text-base font-semibold text-ink hover:underline"
-        >
-          {user.display_name}
-        </Link>
-        <p className="mt-0.5 text-xs capitalize text-muted">
-          {user.account_kind.replace("_", " ")}
-        </p>
-        <div className="mt-2">
-          <VerificationChip state={user.verification_state} />
+  const [tab, setTab] = useState<"community" | "notices">("community");
+  const feed = useFeed("everyone");
+  const notices = useNotices(true);
+  const sessions = useResources("sessions");
+  const learning = useResources("learning", "", "", true);
+  const jobs = useResources("jobs", "", "", true);
+  const next = sessions.data?.pages
+    .flatMap((p) => p.items)
+    .filter((s) => s.starts_at && new Date(s.starts_at) > new Date())
+    .sort((a, b) => new Date(a.starts_at!).getTime() - new Date(b.starts_at!).getTime())[0];
+  const lesson = learning.data?.pages.flatMap((p) => p.items).find((l) => !l.completed);
+  const savedJobs = jobs.data?.pages.flatMap((p) => p.items) ?? [];
+  const name = user?.display_name.split(" ")[0] ?? "there";
+  const right = (
+    <div className="space-y-5">
+      <section className="social-card p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <CalendarDays size={18} className="text-accent-600" />
+          <h2 className="text-sm font-semibold">Up next</h2>
         </div>
-
-        <button
-          onClick={copyId}
-          title="Copy your member ID"
-          className="mt-4 flex w-full items-center justify-center gap-1.5 border-t border-hairline pt-3 text-left"
-        >
-          <span className="truncate font-mono text-[0.6875rem] text-muted">{user.id}</span>
-          {copied ? (
-            <Check className="size-3 shrink-0 text-accent-600" />
-          ) : (
-            <Copy className="size-3 shrink-0 text-faint" />
-          )}
-        </button>
-
-        {user.verification_state !== "verified" && (
-          <p className="mt-3 text-left text-xs leading-relaxed text-muted">
-            Verified members receive official notices. Ask an administrator to review your
-            registration.
+        <ErrorBanner error={sessions.error} />
+        {sessions.isLoading ? (
+          <p className="text-sm text-muted">Loading your schedule…</p>
+        ) : next ? (
+          <>
+            <p className="mb-2 text-[11px] font-semibold uppercase text-accent-700">
+              {new Date(next.starts_at!).toLocaleString(undefined, {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })}{" "}
+              ·{" "}
+              {new Date(next.starts_at!).toLocaleTimeString(undefined, {
+                hour: "numeric",
+                minute: "2-digit",
+              })}
+            </p>
+            <h3 className="text-base font-semibold leading-6">{next.title}</h3>
+            <p className="mt-2 text-xs text-muted">{next.organization}</p>
+            <Link
+              to={`/sessions?code=${meetingCode(next.id)}`}
+              className="mt-5 inline-flex items-center gap-2 rounded-md bg-accent-600 px-4 py-2 text-xs font-semibold text-white"
+            >
+              <Video size={14} />
+              View session
+            </Link>
+          </>
+        ) : !sessions.error ? (
+          <>
+            <p className="text-sm leading-6 text-muted">
+              Make time to learn with your peers. Find a session or organize your own.
+            </p>
+            <Link to="/sessions" className="mt-4 block text-xs font-semibold text-accent-700">
+              Explore sessions →
+            </Link>
+          </>
+        ) : null}
+      </section>
+      <section className="social-card p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <GraduationCap size={18} className="text-accent-600" />
+          <h2 className="text-sm font-semibold">Your learning list</h2>
+        </div>
+        <ErrorBanner error={learning.error} />
+        {lesson ? (
+          <>
+            <p className="text-sm font-semibold leading-6">{lesson.title}</p>
+            <p className="mt-1 text-xs text-muted">{lesson.organization}</p>
+            <Link to="/learning" className="mt-4 block text-xs font-semibold text-accent-700">
+              Continue learning →
+            </Link>
+          </>
+        ) : !learning.error ? (
+          <>
+            <p className="text-sm leading-6 text-muted">
+              Save a lesson that interests you. Come back to it when you have a moment.
+            </p>
+            <Link to="/learning" className="mt-4 block text-xs font-semibold text-accent-700">
+              Find something to learn →
+            </Link>
+          </>
+        ) : null}
+      </section>
+      <section className="rounded-2xl bg-[#F7F8FA] p-5">
+        <div className="mb-3 flex items-center gap-2">
+          <Bookmark size={16} />
+          <h2 className="text-sm font-semibold">Your career shortlist</h2>
+        </div>
+        <ErrorBanner error={jobs.error} />
+        {savedJobs.length ? (
+          savedJobs.slice(0, 2).map((j) => (
+            <Link key={j.id} to="/jobs" className="mb-3 block">
+              <p className="text-sm font-medium">{j.title}</p>
+              <p className="mt-1 text-xs text-muted">{j.organization}</p>
+            </Link>
+          ))
+        ) : (
+          <p className="text-xs leading-6 text-muted">
+            Keep opportunities you’re considering in one place.
           </p>
         )}
-      </CardBody>
-    </Card>
+        <Link to="/jobs" className="mt-3 inline-block text-xs font-semibold text-accent-700">
+          Explore careers →
+        </Link>
+      </section>
+    </div>
   );
-}
-
-function TrendingRail() {
-  const { data: threads } = useThreads("");
-  const { data: notices } = useNotices(true);
-
   return (
-    <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Active in Rx Forum</CardTitle>
-        </CardHeader>
-        <CardBody className="space-y-3">
-          {(threads?.items ?? []).slice(0, 4).map((t) => (
-            <Link key={t.id} to={`/forum/${t.id}`} className="group block">
-              <p className="line-clamp-2 text-[0.8125rem] leading-snug text-ink group-hover:underline">
-                {t.title}
-              </p>
-              <p className="mt-0.5 text-xs text-faint">
-                {t.reply_count} {t.reply_count === 1 ? "answer" : "answers"}
-                {t.has_accepted && " · resolved"}
-              </p>
-            </Link>
-          ))}
-          {(threads?.items?.length ?? 0) === 0 && (
-            <p className="text-xs text-faint">No questions yet — ask the first one.</p>
-          )}
+    <AppShell right={right}>
+      <header className="mb-7">
+        <p className="text-xs text-muted">
+          {new Date().toLocaleDateString(undefined, {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+          })}
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Good to see you, {name}.</h1>
+        <p className="mt-2 text-sm leading-6 text-muted">
+          A little inspiration. A useful conversation. Your next step forward.
+        </p>
+      </header>
+      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+        {[
+          {
+            to: "/community",
+            title: "Your community",
+            sub: "Explore the conversation",
+            icon: Users,
+          },
+          {
+            to: "/learning",
+            title: "Keep learning",
+            sub: "Build on what you know",
+            icon: GraduationCap,
+          },
+          {
+            to: "/jobs",
+            title: "Your next chapter",
+            sub: "Discover opportunities",
+            icon: BriefcaseBusiness,
+          },
+        ].map(({ to, title, sub, icon: Icon }) => (
           <Link
-            to="/forum"
-            className="block pt-1 text-xs font-medium text-accent-600 hover:underline"
+            key={to}
+            to={to}
+            className="social-card group p-4 transition-shadow hover:shadow-md"
           >
-            Open Rx Forum →
+            <div className="mb-4 flex items-center justify-between">
+              <Icon size={20} className="text-accent-600" />
+              <ArrowUpRight size={14} className="text-muted group-hover:text-accent-600" />
+            </div>
+            <p className="text-sm font-semibold">{title}</p>
+            <p className="mt-1 text-[11px] text-muted">{sub}</p>
           </Link>
-        </CardBody>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Latest notices</CardTitle>
-        </CardHeader>
-        <CardBody className="space-y-3">
-          {(notices?.items ?? [])
-            .slice(-3)
-            .reverse()
-            .map((n) => (
-              <Link key={n.id} to={`/notices/${n.id}`} className="group block">
-                <SeverityChip severity={n.severity} />
-                <p className="mt-1 line-clamp-2 text-[0.8125rem] leading-snug text-ink group-hover:underline">
-                  {n.title}
-                </p>
-                <p className="mt-0.5 text-xs text-faint tnum">
-                  {formatRelative(n.published_at ?? n.created_at)}
-                </p>
-              </Link>
-            ))}
-          {(notices?.items?.length ?? 0) === 0 && (
-            <p className="text-xs text-faint">No published notices yet.</p>
-          )}
-        </CardBody>
-      </Card>
-    </>
-  );
-}
-
-function Composer({ scope }: { scope: FeedScope }) {
-  const { user } = useAuth();
-  const createPost = useCreatePost(scope);
-  const [body, setBody] = useState("");
-  const [focused, setFocused] = useState(false);
-
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    if (!body.trim()) return;
-    await createPost.mutateAsync(body);
-    setBody("");
-    setFocused(false);
-  }
-
-  return (
-    <Card className="mb-6">
-      <form onSubmit={submit} className="p-4">
-        <div className="flex gap-3">
-          {user && (
-            <Avatar name={user.display_name} size="sm" verification={user.verification_state} />
-          )}
-          <textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            onFocus={() => setFocused(true)}
-            rows={focused || body ? 3 : 1}
-            placeholder="Share a clinical update, drug alert, or start a peer consult…"
-            className="flex-1 resize-none border-b border-divider bg-transparent py-1.5 text-sm text-ink transition-colors placeholder:text-faint focus-visible:border-ink focus-visible:outline-none"
-          />
-        </div>
-        {(focused || body) && (
-          <div className="mt-3 flex items-center justify-between border-t border-hairline pt-3">
-            <p className="text-xs text-faint">Posts are attributed to your verified identity.</p>
-            <Button type="submit" size="sm" loading={createPost.isPending} disabled={!body.trim()}>
-              Post
-            </Button>
-          </div>
-        )}
-        {createPost.error ? (
-          <div className="mt-3">
-            <ErrorBanner error={createPost.error} />
-          </div>
-        ) : null}
-      </form>
-    </Card>
-  );
-}
-
-export function HomePage() {
-  const [scope, setScope] = useState<FeedScope>("everyone");
-  const { data, isLoading, error } = useFeed(scope);
-  const setReaction = useSetReaction(scope);
-
-  return (
-    <AppShell left={<ProfileRail />} right={<TrendingRail />}>
-      <Composer scope={scope} />
-
-      <div className="segment mb-5">
-        {(
-          [
-            { value: "everyone", label: "All members" },
-            { value: "following", label: "Following" },
-          ] as const
-        ).map(({ value, label }) => (
-          <button
-            key={value}
-            onClick={() => setScope(value)}
-            data-active={scope === value}
-            className="segment-item"
-          >
-            {label}
-          </button>
         ))}
       </div>
-
-      <ErrorBanner error={error} />
-
-      {isLoading ? (
-        <div className="space-y-4">
-          <SkeletonPost />
-          <SkeletonPost />
-          <SkeletonPost />
-        </div>
-      ) : data && data.items.length > 0 ? (
-        <div className="space-y-4">
-          {data.items.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              onToggleReaction={(postId, on) => setReaction.mutate({ postId, on })}
-            />
+      <PostComposer />
+      <div className="my-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-1 rounded-lg bg-slate-50 p-1">
+          {[
+            { key: "community", label: "Community highlights", icon: Users },
+            { key: "notices", label: "Official notices", icon: Bell },
+          ].map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key as typeof tab)}
+              aria-pressed={tab === key}
+              className={`flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold ${tab === key ? "bg-white text-accent-700 shadow-sm" : "text-muted"}`}
+            >
+              <Icon size={14} />
+              {label}
+            </button>
           ))}
         </div>
+        <Link
+          to={tab === "community" ? "/community" : "/notices"}
+          className="text-xs font-semibold text-accent-700"
+        >
+          View all →
+        </Link>
+      </div>
+      {tab === "community" ? (
+        <>
+          <ErrorBanner error={feed.error} />
+          {feed.isLoading ? (
+            <SkeletonPost />
+          ) : feed.data?.items.length ? (
+            <div className="space-y-5">
+              {feed.data.items.slice(0, 3).map((p) => (
+                <PostCard key={p.id} post={p} />
+              ))}
+            </div>
+          ) : !feed.error ? (
+            <section className="social-card p-8 text-center">
+              <Users className="mx-auto mb-3 text-accent-600" />
+              <h2 className="font-semibold">There’s room for your perspective.</h2>
+              <p className="mt-2 text-sm text-muted">
+                Share the first update, or explore your professional network.
+              </p>
+              <Link to="/network" className="mt-4 inline-block text-sm text-accent-700">
+                Meet your peers →
+              </Link>
+            </section>
+          ) : null}
+          <div className="mt-6 text-center">
+            <Link to="/community">
+              <Button variant="secondary">
+                Explore the community
+                <ArrowUpRight size={15} />
+              </Button>
+            </Link>
+          </div>
+        </>
       ) : (
-        <Card>
-          <EmptyState
-            title={scope === "following" ? "Your following feed is quiet" : "No posts yet"}
-            description={
-              scope === "following"
-                ? "Follow colleagues from the Directory and their updates will appear here."
-                : "Be the first to share something with the profession."
-            }
-            action={
-              scope === "following" ? (
-                <Link to="/network">
-                  <Button size="sm">Open Directory</Button>
-                </Link>
-              ) : undefined
-            }
-          />
-        </Card>
+        <>
+          <ErrorBanner error={notices.error} />
+          {notices.isLoading ? (
+            <SkeletonPost />
+          ) : (
+            <div className="space-y-4">
+              {[...(notices.data?.items ?? [])]
+                .reverse()
+                .slice(0, 4)
+                .map((n) => (
+                  <Link key={n.id} to={`/notices/${n.id}`} className="social-card block p-5">
+                    <SeverityChip severity={n.severity} />
+                    <h2 className="mt-3 text-base font-semibold">{n.title}</h2>
+                    <p className="mt-2 text-xs text-muted">
+                      {formatRelative(n.published_at ?? n.created_at)}
+                    </p>
+                    <span className="mt-4 inline-block text-xs font-semibold text-accent-700">
+                      Read notice →
+                    </span>
+                  </Link>
+                ))}
+              {!notices.data?.items.length && !notices.error && (
+                <p className="social-card p-6 text-sm text-muted">No published notices yet.</p>
+              )}
+            </div>
+          )}
+        </>
       )}
     </AppShell>
   );

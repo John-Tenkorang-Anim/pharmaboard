@@ -3,16 +3,26 @@ package messaging
 import (
 	"context"
 	"fmt"
+	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/identity"
 
 	"github.com/google/uuid"
 )
 
-type Service struct {
-	repo Repository
+type ProfileSource interface {
+	ProfilesByIDs(context.Context, []uuid.UUID) (map[uuid.UUID]identity.Profile, error)
 }
 
-func NewService(repo Repository) *Service {
-	return &Service{repo: repo}
+type Service struct {
+	profiles ProfileSource
+	repo     Repository
+}
+
+func NewService(repo Repository, profiles ...ProfileSource) *Service {
+	s := &Service{repo: repo}
+	if len(profiles) > 0 {
+		s.profiles = profiles[0]
+	}
+	return s
 }
 
 // CreateConversation creates a direct (exactly 2 participants) or group (up
@@ -83,14 +93,28 @@ func (s *Service) GetConversation(ctx context.Context, callerID, conversationID 
 	if err := s.requireActiveParticipant(ctx, conversationID, callerID); err != nil {
 		return Conversation{}, err
 	}
-	return s.repo.GetConversation(ctx, conversationID)
+	c, err := s.repo.GetConversation(ctx, conversationID)
+	if err != nil {
+		return c, err
+	}
+	return s.enrich(ctx, c)
 }
 
 func (s *Service) ListConversations(ctx context.Context, callerID, after uuid.UUID, limit int) ([]Conversation, error) {
 	if limit <= 0 || limit > 200 {
 		limit = 50
 	}
-	return s.repo.ListConversationsForUser(ctx, callerID, after, limit)
+	items, err := s.repo.ListConversationsForUser(ctx, callerID, after, limit)
+	if err != nil {
+		return nil, err
+	}
+	for i, c := range items {
+		items[i], err = s.enrich(ctx, c)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return items, nil
 }
 
 // AddParticipant only applies to group conversations: a direct
@@ -159,8 +183,8 @@ func (s *Service) MarkReadThrough(ctx context.Context, callerID, conversationID,
 
 // StartCall brokers a third-party video room for the conversation and
 // announces it inline as a system message, so joining a call is visible
-// the same way any other conversation event is — see ADR-0004 for why this
-// is a link to an external provider rather than in-house media relay.
+// the same way any other conversation event is. Clients embed the provider
+// room and offer the same join URL to the other conversation members.
 func (s *Service) StartCall(ctx context.Context, callerID, conversationID uuid.UUID) (CallSession, error) {
 	if err := s.requireActiveParticipant(ctx, conversationID, callerID); err != nil {
 		return CallSession{}, err
@@ -169,7 +193,7 @@ func (s *Service) StartCall(ctx context.Context, callerID, conversationID uuid.U
 	if err != nil {
 		return CallSession{}, err
 	}
-	if _, err := s.repo.InsertSystemMessage(ctx, conversationID, "A video call was started."); err != nil {
+	if _, err := s.repo.InsertSystemMessage(ctx, conversationID, "A video call was started. Join: "+call.RoomURL()); err != nil {
 		return CallSession{}, err
 	}
 	return call, nil
@@ -177,4 +201,29 @@ func (s *Service) StartCall(ctx context.Context, callerID, conversationID uuid.U
 
 func (s *Service) EndCall(ctx context.Context, callerID, callID uuid.UUID) error {
 	return s.repo.EndCall(ctx, callID, callerID)
+}
+
+func (s *Service) enrich(ctx context.Context, c Conversation) (Conversation, error) {
+	if s.profiles == nil {
+		return c, nil
+	}
+	participants, err := s.repo.ListActiveParticipants(ctx, c.ID)
+	if err != nil {
+		return c, err
+	}
+	ids := make([]uuid.UUID, len(participants))
+	for i, p := range participants {
+		ids[i] = p.UserID
+	}
+	profiles, err := s.profiles.ProfilesByIDs(ctx, ids)
+	if err != nil {
+		return c, err
+	}
+	c.Members = []Member{}
+	for _, id := range ids {
+		if p, ok := profiles[id]; ok {
+			c.Members = append(c.Members, Member{ID: id, Name: p.DisplayName})
+		}
+	}
+	return c, nil
 }

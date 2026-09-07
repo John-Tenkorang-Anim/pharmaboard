@@ -228,3 +228,72 @@ func TestReplyCountStaysInStep(t *testing.T) {
 			detail.Thread.ReplyCount, len(detail.Replies))
 	}
 }
+
+func TestPostCommentThreadIntegrity(t *testing.T) {
+	pool := testPool(t)
+	ctx := context.Background()
+	svc := newService(pool)
+	author := mustCreateUser(t, pool)
+	peer := mustCreateUser(t, pool)
+	post, err := svc.CreatePost(ctx, author, "Comment integrity test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := svc.CreatePost(ctx, author, "Other post for isolation test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := uuid.New()
+	child := uuid.New()
+	for i := 0; i < 2; i++ {
+		if err = svc.Comment(ctx, author, post.ID, root, nil, "A useful perspective"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err = svc.Comment(ctx, peer, post.ID, root, nil, "Overwrite another author"); err != community.ErrAlreadyExists {
+		t.Fatalf("collision: %v", err)
+	}
+	if err = svc.Comment(ctx, peer, other.ID, uuid.New(), &root, "Cross-post reply"); err != community.ErrValidation {
+		t.Fatalf("cross-post parent: %v", err)
+	}
+	if err = svc.Comment(ctx, peer, post.ID, child, &root, "A response to that perspective"); err != nil {
+		t.Fatal(err)
+	}
+	if err = svc.Comment(ctx, peer, post.ID, uuid.New(), &child, "Unsupported nesting"); err != community.ErrValidation {
+		t.Fatalf("nested parent: %v", err)
+	}
+	detail, err := svc.PostDetail(ctx, peer, post.ID)
+	if err != nil || detail.ReplyCount != 2 {
+		t.Fatalf("count: %+v %v", detail, err)
+	}
+	if err = svc.DeleteComment(ctx, peer, post.ID, root); err != community.ErrForbidden {
+		t.Fatalf("delete another author: %v", err)
+	}
+	if err = svc.DeleteComment(ctx, author, post.ID, root); err != nil {
+		t.Fatal(err)
+	}
+	comments, more, err := svc.Comments(ctx, post.ID, 0)
+	if err != nil || more || len(comments) != 2 {
+		t.Fatalf("comments: %d %v %v", len(comments), more, err)
+	}
+	if comments[0].Body != "" || comments[0].DeletedAt == nil || comments[1].ParentID == nil {
+		t.Fatal("Deleted root must preserve thread shape without revealing its text")
+	}
+	detail, err = svc.PostDetail(ctx, peer, post.ID)
+	if err != nil || detail.ReplyCount != 1 {
+		t.Fatal("deleted replies must not count")
+	}
+	if err = svc.Comment(ctx, author, post.ID, uuid.New(), nil, "   "); err != community.ErrValidation {
+		t.Fatal("empty replies must be rejected")
+	}
+	repo := community.NewPostgresRepository(pool)
+	if err = repo.Hide(ctx, community.SubjectPost, post.ID, "test moderation"); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err = svc.Comments(ctx, post.ID, 0); err != community.ErrNotFound {
+		t.Fatal("hidden post comments must not be exposed")
+	}
+	if err = svc.Comment(ctx, peer, post.ID, uuid.New(), nil, "Reply to hidden post"); err != community.ErrNotFound {
+		t.Fatal("hidden posts must not accept replies")
+	}
+}
