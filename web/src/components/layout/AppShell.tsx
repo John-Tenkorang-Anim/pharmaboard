@@ -1,3 +1,5 @@
+import { PlatformBrand } from "@/components/ui/PlatformBrand";
+import { platform } from "@/lib/platform";
 import { type ReactNode, useState, type FormEvent } from "react";
 import { NavLink, useNavigate, Link, useLocation } from "react-router-dom";
 import clsx from "clsx";
@@ -14,7 +16,6 @@ import {
   MessageCircle,
   Menu,
   X,
-  Pill,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
@@ -28,7 +29,7 @@ const navItems = [
   { to: "/sessions", label: "Collaboration", icon: Video },
   { to: "/messaging", label: "Messages", icon: MessagesSquare },
   { to: "/network", label: "My network", icon: Users },
-  { to: "/forum", label: "Rx Forum", icon: MessageCircle },
+  { to: "/forum", label: platform.forumName, icon: MessageCircle },
   { to: "/jobs", label: "Careers", icon: BriefcaseBusiness },
 ];
 export function AppShell({
@@ -47,8 +48,23 @@ export function AppShell({
   const location = useLocation();
   const [query, setQuery] = useState("");
   const [mobile, setMobile] = useState(false);
-  const [collapsed, setCollapsed] = useState(() => { try { return localStorage.getItem("pharmaboard.sidebar.collapsed") === "true"; } catch { return false; } });
-  function toggleSidebar() { setCollapsed(value => { try { localStorage.setItem("pharmaboard.sidebar.collapsed", String(!value)); } catch { /* Storage is optional. */ } return !value; }); }
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem("pharmaboard.sidebar.collapsed") === "true";
+    } catch {
+      return false;
+    }
+  });
+  function toggleSidebar() {
+    setCollapsed((value) => {
+      try {
+        localStorage.setItem("pharmaboard.sidebar.collapsed", String(!value));
+      } catch {
+        /* Storage is optional. */
+      }
+      return !value;
+    });
+  }
   const current = navItems.find((n) => location.pathname.startsWith(n.to));
   function onSearch(e: FormEvent) {
     e.preventDefault();
@@ -77,15 +93,13 @@ export function AppShell({
           collapsed ? "lg:hidden" : "lg:translate-x-0",
         )}
       >
-        <div className="flex h-20 items-center gap-2 px-6">
+        <div className="flex h-24 items-center gap-2 px-4">
           <Link
             to="/home"
-            className="flex items-center gap-2.5 text-lg font-semibold tracking-tight"
+            aria-label={`${platform.name} home`}
+            className="flex min-w-0 flex-col items-start gap-1"
           >
-            <span className="rounded-xl bg-accent-600 p-2 text-white">
-              <Pill size={21} />
-            </span>
-            PharmaBoard<span className="text-accent-600">.</span>
+            <PlatformBrand />
           </Link>
           <button
             aria-label="Close navigation"
@@ -125,7 +139,7 @@ export function AppShell({
             </NavLink>
           ))}
         </nav>
-        <div className="border-t border-hairline p-4">
+        <div className="p-4">
           {user && (
             <div className="flex items-center gap-3">
               <Link to={`/people/${user.id}`} aria-label="Your profile">
@@ -152,7 +166,7 @@ export function AppShell({
         </div>
       </aside>
       <div className={collapsed ? "" : "lg:pl-60"}>
-        <header className="sticky top-0 z-30 border-b border-hairline bg-white/95 backdrop-blur">
+        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur">
           <div className="flex h-20 items-center gap-4 px-5 md:px-8">
             <button
               aria-label="Open navigation"
@@ -162,7 +176,16 @@ export function AppShell({
             >
               <Menu size={21} />
             </button>
-            <button onClick={toggleSidebar} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} title={collapsed ? "Expand sidebar" : "Collapse sidebar for focus"} aria-expanded={!collapsed} aria-controls="workspace-navigation" className="hidden rounded-lg p-2 text-muted hover:bg-slate-100 lg:block">{collapsed ? <PanelLeftOpen size={20}/> : <PanelLeftClose size={20}/>}</button>
+            <button
+              onClick={toggleSidebar}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              title={collapsed ? "Expand sidebar" : "Collapse sidebar for focus"}
+              aria-expanded={!collapsed}
+              aria-controls="workspace-navigation"
+              className="hidden rounded-lg p-2 text-muted hover:bg-slate-100 lg:block"
+            >
+              {collapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
+            </button>
             <span className="hidden text-sm font-medium sm:block">
               Workspace <span className="mx-3 text-divider">/</span>{" "}
               <span className="text-muted">{current?.label ?? "Account"}</span>
@@ -187,7 +210,7 @@ export function AppShell({
           </div>
         </header>
         {user?.display_name.includes("· Preview") && (
-          <div className="border-b border-hairline bg-white px-5 py-2 text-xs text-muted md:px-8">
+          <div className="bg-white px-5 py-2 text-xs text-muted md:px-8">
             Design preview · Sample people, opportunities, and learning content are illustrative.
           </div>
         )}
@@ -210,8 +233,8 @@ export function AppShell({
             children
           )}
         </main>
-        <footer className="mx-5 flex flex-wrap justify-between gap-2 border-t border-hairline py-5 text-[11px] text-muted md:mx-8">
-          <span>PharmaBoard · Connected by profession. United by purpose.</span>
+        <footer className="mx-5 flex flex-wrap justify-between gap-2 py-5 text-[11px] text-muted md:mx-8">
+          <span>{platform.name} · Connected by profession. United by purpose.</span>
           <Link to="/forum" className="hover:underline">
             Learn from your community ↗
           </Link>

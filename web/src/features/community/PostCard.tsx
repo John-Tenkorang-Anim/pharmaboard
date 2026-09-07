@@ -1,8 +1,8 @@
 import { useState, useRef, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import {
-  ThumbsUp,
   MessageCircle,
+  ThumbsUp,
   Share2,
   Send,
   X,
@@ -44,15 +44,9 @@ function Body({ text }: { text: string }) {
     </p>
   );
 }
-export function PostCard({
-  post,
-  defaultExpanded = false,
-}: {
-  post: FeedPost;
-  defaultExpanded?: boolean;
-}) {
+export function PostCard({ post }: { post: FeedPost }) {
   const { user } = useAuth();
-  const [expanded, setExpanded] = useState(defaultExpanded);
+  const [expanded, setExpanded] = useState(false);
   const [body, setBody] = useState("");
   const [draftId, setDraftId] = useState(() => crypto.randomUUID());
   const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null);
@@ -215,7 +209,12 @@ export function PostCard({
             ? `${count} ${count === 1 ? "endorsement" : "endorsements"}`
             : "Be the first to endorse"}
         </span>
-        <button onClick={() => setExpanded(!expanded)} className="hover:underline">
+        <button
+          aria-expanded={expanded}
+          onClick={() => setExpanded(!expanded)}
+          className="inline-flex items-center gap-1.5 rounded px-2 py-1 hover:bg-slate-50 hover:underline"
+        >
+          <MessageCircle size={15} aria-hidden="true" />
           {post.reply_count ?? 0} {(post.reply_count ?? 0) === 1 ? "reply" : "replies"}
         </button>
       </div>
@@ -228,14 +227,6 @@ export function PostCard({
         >
           <ThumbsUp size={17} fill={reacted ? "currentColor" : "none"} />
           Endorse
-        </button>
-        <button
-          onClick={() => setExpanded(!expanded)}
-          aria-expanded={expanded}
-          className="social-action text-muted"
-        >
-          <MessageCircle size={17} />
-          Reply
         </button>
         <button onClick={share} className="social-action text-muted">
           <Share2 size={17} />
@@ -250,7 +241,7 @@ export function PostCard({
       {expanded && (
         <section aria-label="Post replies" className="px-5 pb-5">
           <div className="mb-4 rounded-lg bg-blue-50/60 px-3 py-2 text-xs text-muted">
-            Keep the discussion professional. Do not include patient information.
+            Keep the discussion respectful. Avoid sharing private personal information.
           </div>
           <ErrorBanner error={comments.error} />
           {comments.isLoading ? (

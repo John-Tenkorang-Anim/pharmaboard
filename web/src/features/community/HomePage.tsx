@@ -19,13 +19,14 @@ import { useResources, meetingCode } from "@/features/workspace/api";
 import { useNotices } from "@/features/notices/api";
 import { SeverityChip } from "@/components/ui/Badge";
 import { formatRelative } from "@/lib/format";
-import { useFeed } from "./api";
+import { useCommunityFeed } from "./api";
 import { PostCard } from "./PostCard";
 import { PostComposer } from "./CommunityPage";
 export function HomePage() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<"community" | "notices">("community");
-  const feed = useFeed("everyone");
+  const [tab, setTab] = useState<"community" | "following" | "notices">("community");
+  const feed = useCommunityFeed(tab === "following" ? "following" : "everyone");
+  const posts = feed.data?.pages.flatMap((p) => p.items) ?? [];
   const notices = useNotices(true);
   const sessions = useResources("sessions");
   const learning = useResources("learning", "", "", true);
@@ -150,7 +151,7 @@ export function HomePage() {
         {[
           {
             to: "/community",
-            title: "Your community",
+            title: "Find your people",
             sub: "Explore the conversation",
             icon: Users,
           },
@@ -181,11 +182,12 @@ export function HomePage() {
           </Link>
         ))}
       </div>
-      <PostComposer />
+      <PostComposer scope={tab === "following" ? "following" : "everyone"} />
       <div className="my-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-1 rounded-lg bg-slate-50 p-1">
           {[
-            { key: "community", label: "Community highlights", icon: Users },
+            { key: "community", label: "Latest discussions", icon: Users },
+            { key: "following", label: "Following", icon: Users },
             { key: "notices", label: "Official notices", icon: Bell },
           ].map(({ key, label, icon: Icon }) => (
             <button
@@ -200,20 +202,20 @@ export function HomePage() {
           ))}
         </div>
         <Link
-          to={tab === "community" ? "/community" : "/notices"}
+          to={tab !== "notices" ? "/community" : "/notices"}
           className="text-xs font-semibold text-accent-700"
         >
           View all →
         </Link>
       </div>
-      {tab === "community" ? (
+      {tab !== "notices" ? (
         <>
           <ErrorBanner error={feed.error} />
           {feed.isLoading ? (
             <SkeletonPost />
-          ) : feed.data?.items.length ? (
+          ) : posts.length ? (
             <div className="space-y-5">
-              {feed.data.items.slice(0, 3).map((p) => (
+              {posts.map((p) => (
                 <PostCard key={p.id} post={p} />
               ))}
             </div>
@@ -229,14 +231,17 @@ export function HomePage() {
               </Link>
             </section>
           ) : null}
-          <div className="mt-6 text-center">
-            <Link to="/community">
-              <Button variant="secondary">
-                Explore the community
-                <ArrowUpRight size={15} />
+          {feed.hasNextPage && (
+            <div className="mt-6 text-center">
+              <Button
+                variant="secondary"
+                loading={feed.isFetchingNextPage}
+                onClick={() => feed.fetchNextPage()}
+              >
+                Load more discussions
               </Button>
-            </Link>
-          </div>
+            </div>
+          )}
         </>
       ) : (
         <>

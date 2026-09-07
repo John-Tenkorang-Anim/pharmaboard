@@ -58,10 +58,14 @@ type RegisterInput struct {
 	PhoneE164    *string
 	Email        *string
 	RegionCode   *string
+	Institution  *string
 	PracticeArea *string
 }
 
 func (s *Service) Register(ctx context.Context, in RegisterInput) (User, error) {
+	if (in.Institution != nil && len(*in.Institution) > 160) || (in.PracticeArea != nil && len(*in.PracticeArea) > 160) {
+		return User{}, fmt.Errorf("%w: institution and field must be at most 160 characters", ErrInvalidCredentials)
+	}
 	if !in.AccountKind.Valid() {
 		return User{}, fmt.Errorf("%w: invalid account_kind", ErrInvalidCredentials)
 	}
@@ -80,6 +84,7 @@ func (s *Service) Register(ctx context.Context, in RegisterInput) (User, error) 
 		Email:             in.Email,
 		RegionCode:        in.RegionCode,
 		PracticeArea:      in.PracticeArea,
+		Institution:       in.Institution,
 		VerificationState: VerificationUnverified,
 	}
 	if err := s.repo.CreateUser(ctx, user); err != nil {

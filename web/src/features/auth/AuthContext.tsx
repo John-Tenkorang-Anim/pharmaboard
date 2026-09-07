@@ -10,6 +10,8 @@ interface RegisterInput {
   display_name: string;
   phone_e164?: string;
   email?: string;
+  practice_area?: string;
+  institution?: string;
 }
 
 interface AuthContextValue {

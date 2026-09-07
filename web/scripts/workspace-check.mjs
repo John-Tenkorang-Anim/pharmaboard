@@ -6,7 +6,7 @@ const WEB=process.env.PHARMABOARD_WEB_BASE_URL||'http://127.0.0.1:5174';
 const suffix=Date.now();
 async function req(path,method='GET',body,token){const r=await fetch(API+path,{method,headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:body===undefined?undefined:JSON.stringify(body)});const text=await r.text();return {status:r.status,data:text?JSON.parse(text):undefined};}
 async function account(name,n){const phone='+2332'+String(suffix+n).slice(-8);const register=await req('/auth/register','POST',{account_kind:'pharmacist',display_name:name,phone_e164:phone});assert.equal(register.status,201);const otp=await req('/auth/otp/request','POST',{channel:'phone',contact:phone});const login=await req('/auth/otp/verify','POST',{channel:'phone',contact:phone,code:otp.data.dev_only_code});assert.equal(login.status,200);const token=login.data.access_token;const me=await req('/auth/me','GET',undefined,token);return {token,id:me.data.id};}
-const author=await account('Workspace QA Author',0),other=await account('Workspace QA Colleague',1),third=await account('Workspace QA Observer',2);
+const author=await account('Thomas Addo',0),other=await account('Linda Asiedu',1),third=await account('James Baah',2);
 const resourceIds=[];
 const browser=await chromium.launch();const page=await browser.newPage({viewport:{width:1440,height:1050}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
 fs.mkdirSync('/tmp/pharmaboard-workspace-qa',{recursive:true});
@@ -23,7 +23,7 @@ try{
  assert(!(await req('/workspace?kind=jobs&saved=true','GET',undefined,author.token)).data.items.some(v=>v.id===id));
  console.log('PASS authentication, ownership, URL validation, idempotent publish, isolated saved state');
  await page.addInitScript(token=>localStorage.setItem('pharmaboard.access_token',token),author.token);
- await page.goto(WEB+'/home');await page.getByRole('heading',{name:'A stronger profession, together.'}).waitFor();await page.screenshot({path:'/tmp/pharmaboard-workspace-qa/overview.png',fullPage:true});
+ await page.goto(WEB+'/home');await page.getByRole('heading',{name:/Good to see you/}).waitFor();await page.screenshot({path:'/tmp/pharmaboard-workspace-qa/overview.png',fullPage:true});
  await page.goto(WEB+'/sessions');await page.getByRole('button',{name:'Schedule a session',exact:true}).first().click();
  const dialog=page.getByRole('dialog');await dialog.getByLabel('Title',{exact:true}).fill(`QA journal club ${suffix}`);await dialog.getByLabel('Organization / host').fill('QA learning group');await dialog.getByLabel('Start time (your local time)').fill('2026-10-01T16:00');await dialog.getByLabel('Description',{exact:true}).fill('Temporary session for browser verification.');
  assert.equal(await dialog.locator('input[name="url"]').count(),0);
@@ -51,7 +51,7 @@ try{
  await page.getByLabel('Message',{exact:true}).fill('QA resource https://example.com/research');await page.getByRole('button',{name:'Send message',exact:true}).click();
  await page.getByText('QA resource https://example.com/research',{exact:true}).waitFor({timeout:15000});await page.getByRole('button',{name:'Shared links',exact:true}).click();await page.getByRole('link',{name:'https://example.com/research',exact:true}).waitFor();
  console.log('PASS named conversation members, video call start, persistent messages and shared links');
- await page.setViewportSize({width:390,height:844});await page.goto(WEB+'/home');await page.getByRole('heading',{name:'A stronger profession, together.'}).waitFor();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));await page.screenshot({path:'/tmp/pharmaboard-workspace-qa/mobile-overview.png',fullPage:true});
+ await page.setViewportSize({width:390,height:844});await page.goto(WEB+'/home');await page.getByRole('heading',{name:/Good to see you/}).waitFor();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));await page.screenshot({path:'/tmp/pharmaboard-workspace-qa/mobile-overview.png',fullPage:true});
  await page.getByRole('button',{name:'Open navigation'}).click();await page.getByRole('navigation',{name:'Main navigation'}).getByRole('link',{name:'Careers',exact:true}).click();await page.getByRole('heading',{name:'Your next chapter starts here.'}).waitFor();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
  await page.goto(WEB+`/messaging/${cid}`);await page.getByLabel('Message',{exact:true}).waitFor();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));await page.screenshot({path:'/tmp/pharmaboard-workspace-qa/mobile-conversation.png',fullPage:true});
  assert.deepEqual(errors,[]);console.log('PASS mobile navigation, responsive overflow, no JavaScript exceptions');

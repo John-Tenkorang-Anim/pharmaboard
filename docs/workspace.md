@@ -91,3 +91,11 @@ The desktop header includes a sidebar collapse/expand control. Its preference is
 Migration 000009 adds profile portfolio entries and learning visibility. Authenticated members can read portfolios through `GET /v1/workspace/profiles/{userID}`. Owners add/update entries with `PUT /v1/workspace/portfolio/{id}` and remove them with `DELETE`; other members cannot mutate their entries. Sections include About, Experience, Education, Achievements, Projects and Publications. Optional supporting links require HTTPS. Learning is sourced from saved workspace lessons, including self-reported completion, and is private until the owner enables sharing via `PUT /v1/workspace/profile/learning-visibility`.
 
 `web/scripts/profile-check.mjs` exercises ownership, link validation, learning visibility, profile CRUD persistence, desktop focus persistence and mobile navigation. `web/scripts/seed-profile-preview.mjs` adds only explicitly illustrative entries to existing preview accounts; those examples are not verified credentials or real publications.
+
+## General discussions and multidisciplinary onboarding
+
+Overview now shows a paginated general discussion feed with Latest and Following views. Post replies, including permalink views, stay collapsed until the reply-count button is clicked. The separate Community page remains available for discovery.
+
+Migration 000010 adds professional and educator account roles and an institution field. Registration collects a field of study/work and school/organisation; existing users sign in with only their registered number and OTP. Institution is a self-declared profile field, not a verified school affiliation. This is individual and school-representative onboarding; managed school tenants, bulk enrolment and institutional SSO are not implemented.
+
+Known smoke/integration fixture display names in the local preview were replaced with realistic names using `scripts/rename-preview-accounts.sql`; the smoke script uses realistic names for future runs. `web/scripts/onboarding-feed-check.mjs` covers computer engineering signup, separate sign-in, persisted profile details, the overview feed and click-to-expand replies.

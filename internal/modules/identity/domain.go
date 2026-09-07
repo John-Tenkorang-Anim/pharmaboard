@@ -17,7 +17,7 @@ const (
 
 func (k AccountKind) Valid() bool {
 	switch k {
-	case AccountKindPharmacist, AccountKindStudent, AccountKindOrganisation:
+	case AccountKindPharmacist, AccountKindStudent, AccountKindOrganisation, "professional", "educator":
 		return true
 	}
 	return false
@@ -48,6 +48,7 @@ type User struct {
 	DisplayName       string
 	PhoneE164         *string
 	Email             *string
+	Institution       *string
 	PracticeArea      *string
 	RegionCode        *string
 	VerificationState VerificationState

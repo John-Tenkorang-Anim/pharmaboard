@@ -16,7 +16,9 @@ export function useNotices(publishedOnly: boolean) {
       let cursor = "";
       // Follow the existing cursor API so search never silently stops at 100 notices.
       while (true) {
-        const page = await apiFetch<NoticeListResponse>(`/notices?published_only=${publishedOnly}&limit=100${cursor ? `&after=${cursor}` : ""}`);
+        const page = await apiFetch<NoticeListResponse>(
+          `/notices?published_only=${publishedOnly}&limit=100${cursor ? `&after=${cursor}` : ""}`,
+        );
         items.push(...page.items);
         if (page.items.length < 100 || !page.next_cursor || page.next_cursor === cursor) break;
         cursor = page.next_cursor;

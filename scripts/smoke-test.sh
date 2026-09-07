@@ -37,7 +37,7 @@ req() {
   # Each branch is a single quoted curl invocation — do not refactor this
   # into building up an unquoted $args string and expanding it, even
   # though that looks tempting: word-splitting on any space inside a JSON
-  # body (e.g. a display_name like "Smoke Test Author") silently truncates
+  # body (e.g. a display_name like "Kwame Asante") silently truncates
   # the request body and curl reports a baffling "unexpected EOF".
   method=$1; path=$2; body=${3:-}; token=${4:-}
   if [ -n "$token" ] && [ -n "$body" ]; then
@@ -77,11 +77,11 @@ echo "$health" | jq -e '.status == "ok"' >/dev/null || fail "GET /healthz did no
 pass "API server is up ($health)"
 
 step "registering and logging in three personas"
-result=$(register_and_login "Smoke Test Author" "+233209990001")
+result=$(register_and_login "Kwame Asante" "+233209990001")
 AUTHOR_ID=${result%% *}; AUTHOR_TOKEN=${result#* }
-result=$(register_and_login "Smoke Test Approver" "+233209990002")
+result=$(register_and_login "Abena Osei" "+233209990002")
 APPROVER_ID=${result%% *}; APPROVER_TOKEN=${result#* }
-result=$(register_and_login "Smoke Test Recipient" "+233209990003")
+result=$(register_and_login "Kofi Mensah" "+233209990003")
 RECIPIENT_ID=${result%% *}; RECIPIENT_TOKEN=${result#* }
 pass "author=$AUTHOR_ID approver=$APPROVER_ID recipient=$RECIPIENT_ID"
 

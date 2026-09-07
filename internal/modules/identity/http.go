@@ -97,6 +97,7 @@ func profileResponse(p Profile) map[string]any {
 		"account_kind":       p.AccountKind,
 		"verification_state": p.VerificationState,
 		"practice_area":      p.PracticeArea,
+		"institution":        p.Institution,
 		"region_code":        p.RegionCode,
 		"council_reg_no":     p.CouncilRegNo,
 	}
@@ -108,6 +109,7 @@ type registerRequest struct {
 	PhoneE164    *string `json:"phone_e164"`
 	Email        *string `json:"email"`
 	RegionCode   *string `json:"region_code"`
+	Institution  *string `json:"institution"`
 	PracticeArea *string `json:"practice_area"`
 }
 
@@ -126,6 +128,7 @@ func registerHandler(svc *Service) http.HandlerFunc {
 			Email:        req.Email,
 			RegionCode:   req.RegionCode,
 			PracticeArea: req.PracticeArea,
+			Institution:  req.Institution,
 		})
 		if err != nil {
 			writeServiceError(w, err)
@@ -213,6 +216,7 @@ func userResponse(u User) map[string]any {
 		"verification_state": u.VerificationState,
 		"region_code":        u.RegionCode,
 		"practice_area":      u.PracticeArea,
+		"institution":        u.Institution,
 		"created_at":         u.CreatedAt,
 		"version":            u.Version,
 	}

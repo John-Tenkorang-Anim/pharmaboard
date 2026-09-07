@@ -1,25 +1,26 @@
+import { PlatformBrand } from "@/components/ui/PlatformBrand";
+import { platform } from "@/lib/platform";
 import { useState, type FormEvent } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 import { Button } from "@/components/ui/Button";
 import { TextInput, Select } from "@/components/ui/Field";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { ApiError } from "@/lib/api";
 
 type Step = "contact" | "code";
 
 const PROOF_POINTS = [
   {
-    title: "Two-person approval",
-    body: "No single account can both write and approve a critical notice.",
+    title: "Across schools and disciplines",
+    body: "A place for computer engineering, medicine, pharmacy, business and every field in between.",
   },
   {
-    title: "Frozen audience",
-    body: "Every recipient is recorded in the same transaction that publishes.",
+    title: "Learn and build together",
+    body: "Share ideas, join discussions, meet your peers and showcase your projects.",
   },
   {
-    title: "Delivery evidence",
-    body: "Accepted, delivered, read and acknowledged are counted separately.",
+    title: "Your next opportunity",
+    body: "Grow your network and discover learning, mentorship and career opportunities.",
   },
 ];
 
@@ -30,7 +31,11 @@ export function LoginPage() {
 
   const [step, setStep] = useState<Step>("contact");
   const [displayName, setDisplayName] = useState("");
-  const [accountKind, setAccountKind] = useState("pharmacist");
+  const [accountKind, setAccountKind] = useState("student");
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [field, setField] = useState(platform.discipline);
+  const [otherField, setOtherField] = useState("");
+  const [institution, setInstitution] = useState("");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [devCode, setDevCode] = useState<string | null>(null);
@@ -60,11 +65,14 @@ export function LoginPage() {
     setError(null);
     setBusy(true);
     try {
-      try {
-        await register({ account_kind: accountKind, display_name: displayName, phone_e164: phone });
-      } catch (err) {
-        // 409 = already registered, which is fine — we're logging them in.
-        if (!(err instanceof ApiError && err.status === 409)) throw err;
+      if (mode === "signup") {
+        await register({
+          account_kind: accountKind,
+          display_name: displayName,
+          phone_e164: phone,
+          practice_area: field === "Other" ? otherField.trim() : field,
+          institution: institution.trim(),
+        });
       }
       const result = await requestOtp("phone", phone);
       setDevCode(result.dev_only_code ?? null);
@@ -97,11 +105,13 @@ export function LoginPage() {
       {/* Solid black statement panel — plain wordmark, a bold claim, three
           plain proof points below a hairline. No gradient, no illustration. */}
       <div className="hidden flex-col justify-between bg-accent-900 px-16 py-16 lg:flex">
-        <p className="text-lg font-bold text-white">PharmaBoard</p>
+        <div className="text-white">
+          <PlatformBrand large />
+        </div>
 
         <div className="max-w-md">
           <p className="text-[1.75rem] font-semibold leading-[1.3] text-white">
-            The place for your profession to connect, learn, and move forward.
+            Your campus, your career, and a world of ideas.
           </p>
           <div className="mt-10 space-y-5 border-t border-white/15 pt-6">
             {PROOF_POINTS.map(({ title, body }) => (
@@ -115,48 +125,128 @@ export function LoginPage() {
           </div>
         </div>
 
-        <p className="eyebrow text-white/40">No patient data is processed on this platform</p>
+        <p className="eyebrow text-white/40">Built for students, educators and professionals</p>
       </div>
 
       {/* Form panel */}
       <div className="flex items-center justify-center px-6 py-14">
         <div className="w-full max-w-sm">
-          <p className="text-lg font-bold text-ink lg:hidden">PharmaBoard</p>
+          <div className="mb-7 lg:hidden">
+            <PlatformBrand large />
+          </div>
 
           <p className="eyebrow mt-1 lg:mt-0">
-            {step === "contact" ? "Sign in or register" : "Confirm your number"}
+            {step === "contact"
+              ? mode === "signin"
+                ? "Sign in"
+                : "Create your account"
+              : "Confirm your number"}
           </p>
           <h1 className="mt-2 text-2xl font-bold text-ink">
-            {step === "contact" ? "Welcome to PharmaBoard" : "Enter your code"}
+            {step === "contact" ? `Welcome to ${platform.name}` : "Enter your code"}
           </h1>
 
           {step === "contact" ? (
             <form onSubmit={handleContactSubmit} className="mt-8 space-y-5">
-              <TextInput
-                id="displayName"
-                label="Full name"
-                placeholder="Ama Mensah"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                required
-              />
-              <Select
-                id="accountKind"
-                label="Role"
-                value={accountKind}
-                onChange={(e) => setAccountKind(e.target.value)}
-              >
-                <option value="pharmacist">Pharmacist</option>
-                <option value="student">Student</option>
-                <option value="organisation">Organisation</option>
-              </Select>
+              <div className="flex gap-2" role="group" aria-label="Account access">
+                {(["signin", "signup"] as const).map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={mode === value}
+                    onClick={() => {
+                      setMode(value);
+                      setError(null);
+                    }}
+                    className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium ${mode === value ? "bg-ink text-white" : "bg-slate-50 text-muted"}`}
+                  >
+                    {value === "signin" ? "Sign in" : "Create account"}
+                  </button>
+                ))}
+              </div>
+              <p className="text-sm leading-6 text-muted">
+                {mode === "signin"
+                  ? "Welcome back. Sign in with your registered number, whatever your school or field."
+                  : "Join as an individual or represent your school. Your school details appear on your profile and do not imply verified affiliation."}
+              </p>
+              {mode === "signup" && (
+                <>
+                  <TextInput
+                    id="displayName"
+                    label="Full name"
+                    placeholder="Ama Mensah"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    required
+                  />
+                  <Select
+                    id="accountKind"
+                    label="Role"
+                    value={accountKind}
+                    onChange={(e) => setAccountKind(e.target.value)}
+                  >
+                    <option value="pharmacist">Pharmacist</option>
+                    <option value="student">Student</option>
+                    <option value="professional">Professional</option>
+                    <option value="educator">Educator / researcher</option>
+                    <option value="organisation">School / organisation</option>
+                  </Select>
+                  <Select
+                    required
+                    id="field"
+                    label="Field of study or work"
+                    value={field}
+                    onChange={(e) => setField(e.target.value)}
+                  >
+                    <option value="" disabled>
+                      Select your field
+                    </option>
+                    {Array.from(
+                      new Set([
+                        platform.discipline,
+                        "Computer Engineering",
+                        "Computer Science",
+                        "Medicine",
+                        "Pharmacy",
+                        "Nursing",
+                        "Engineering",
+                        "Business",
+                        "Arts & Humanities",
+                        "Sciences",
+                        "Other",
+                      ]),
+                    ).map((value) => (
+                      <option key={value}>{value}</option>
+                    ))}
+                  </Select>
+                  {field === "Other" && (
+                    <TextInput
+                      id="other-field"
+                      label="Your field"
+                      required
+                      maxLength={160}
+                      value={otherField}
+                      onChange={(e) => setOtherField(e.target.value)}
+                    />
+                  )}
+                  <TextInput
+                    id="institution"
+                    label="School, university or organisation"
+                    placeholder="e.g. University of Ghana"
+                    required
+                    maxLength={160}
+                    value={institution}
+                    onChange={(e) => setInstitution(e.target.value)}
+                  />
+                </>
+              )}
               <TextInput
                 id="phone"
                 label="Phone number"
                 placeholder="+233 20 000 0000"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                hint="Existing accounts sign in the same way — enter the number you registered with."
+                hint="Use international format, including your country code."
                 required
               />
               {error != null && <ErrorBanner error={error} />}

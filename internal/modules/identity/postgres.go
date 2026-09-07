@@ -27,9 +27,9 @@ var _ Repository = (*PostgresRepository)(nil)
 
 func (r *PostgresRepository) CreateUser(ctx context.Context, u User) error {
 	_, err := r.pool.Exec(ctx, `
-		INSERT INTO users (id, account_kind, display_name, phone_e164, email, region_code, practice_area, verification_state)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-		u.ID, string(u.AccountKind), u.DisplayName, u.PhoneE164, u.Email, u.RegionCode, u.PracticeArea, string(u.VerificationState))
+		INSERT INTO users (id, account_kind, display_name, phone_e164, email, region_code, practice_area, verification_state, institution)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+		u.ID, string(u.AccountKind), u.DisplayName, u.PhoneE164, u.Email, u.RegionCode, u.PracticeArea, string(u.VerificationState), u.Institution)
 	if err != nil {
 		if isUniqueViolation(err) {
 			return ErrAlreadyExists
@@ -46,7 +46,7 @@ func (r *PostgresRepository) FindByContact(ctx context.Context, channel Channel,
 	}
 	row := r.pool.QueryRow(ctx, fmt.Sprintf(`
 		SELECT id, account_kind, display_name, phone_e164, email, practice_area, region_code,
-		       verification_state, council_reg_no, verified_at, created_at, version
+		       verification_state, council_reg_no, verified_at, created_at, version, institution
 		FROM users WHERE %s = $1 AND deleted_at IS NULL`, column), value)
 	return scanUser(row)
 }
@@ -54,7 +54,7 @@ func (r *PostgresRepository) FindByContact(ctx context.Context, channel Channel,
 func (r *PostgresRepository) FindByID(ctx context.Context, id uuid.UUID) (User, error) {
 	row := r.pool.QueryRow(ctx, `
 		SELECT id, account_kind, display_name, phone_e164, email, practice_area, region_code,
-		       verification_state, council_reg_no, verified_at, created_at, version
+		       verification_state, council_reg_no, verified_at, created_at, version, institution
 		FROM users WHERE id = $1 AND deleted_at IS NULL`, id)
 	return scanUser(row)
 }
@@ -62,7 +62,7 @@ func (r *PostgresRepository) FindByID(ctx context.Context, id uuid.UUID) (User, 
 func scanUser(row pgx.Row) (User, error) {
 	var u User
 	err := row.Scan(&u.ID, &u.AccountKind, &u.DisplayName, &u.PhoneE164, &u.Email, &u.PracticeArea,
-		&u.RegionCode, &u.VerificationState, &u.CouncilRegNo, &u.VerifiedAt, &u.CreatedAt, &u.Version)
+		&u.RegionCode, &u.VerificationState, &u.CouncilRegNo, &u.VerifiedAt, &u.CreatedAt, &u.Version, &u.Institution)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return User{}, ErrNotFound
 	}
@@ -252,7 +252,7 @@ func (r *PostgresRepository) ProfilesByIDs(ctx context.Context, ids []uuid.UUID)
 	}
 
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, display_name, account_kind, verification_state, practice_area, region_code, council_reg_no
+		SELECT id, display_name, account_kind, verification_state, practice_area, region_code, council_reg_no, institution
 		FROM users
 		WHERE id = ANY($1::uuid[]) AND deleted_at IS NULL`, keys)
 	if err != nil {
@@ -264,7 +264,7 @@ func (r *PostgresRepository) ProfilesByIDs(ctx context.Context, ids []uuid.UUID)
 		var p Profile
 		var state VerificationState
 		var regNo *string
-		if err := rows.Scan(&p.ID, &p.DisplayName, &p.AccountKind, &state, &p.PracticeArea, &p.RegionCode, &regNo); err != nil {
+		if err := rows.Scan(&p.ID, &p.DisplayName, &p.AccountKind, &state, &p.PracticeArea, &p.RegionCode, &regNo, &p.Institution); err != nil {
 			return nil, fmt.Errorf("identity: scan profile: %w", err)
 		}
 		p.VerificationState = state
@@ -295,7 +295,7 @@ func (r *PostgresRepository) SearchDirectory(ctx context.Context, q DirectoryQue
 	args = append(args, q.Limit)
 
 	query := `
-		SELECT id, display_name, account_kind, verification_state, practice_area, region_code, council_reg_no
+		SELECT id, display_name, account_kind, verification_state, practice_area, region_code, council_reg_no, institution
 		FROM users WHERE ` + strings.Join(clauses, " AND ") +
 		fmt.Sprintf(" ORDER BY id LIMIT $%d", len(args))
 
@@ -310,7 +310,7 @@ func (r *PostgresRepository) SearchDirectory(ctx context.Context, q DirectoryQue
 		var p Profile
 		var state VerificationState
 		var regNo *string
-		if err := rows.Scan(&p.ID, &p.DisplayName, &p.AccountKind, &state, &p.PracticeArea, &p.RegionCode, &regNo); err != nil {
+		if err := rows.Scan(&p.ID, &p.DisplayName, &p.AccountKind, &state, &p.PracticeArea, &p.RegionCode, &regNo, &p.Institution); err != nil {
 			return nil, fmt.Errorf("identity: scan directory row: %w", err)
 		}
 		p.VerificationState = state

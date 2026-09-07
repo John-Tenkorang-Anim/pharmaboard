@@ -7,31 +7,345 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { TextInput, TextArea } from "@/components/ui/Field";
-const sections = {about:"About",experience:"Experience",education:"Education",achievement:"Achievements & certifications",project:"Projects",publication:"Publications"};
+const sections = {
+  about: "About",
+  experience: "Experience",
+  education: "Education",
+  achievement: "Achievements & certifications",
+  project: "Projects",
+  publication: "Publications",
+};
 type Kind = keyof typeof sections;
-interface Entry {id:string;kind:Kind;title:string;organization:string;period:string;description:string;url:string}
-interface Portfolio {entries:Entry[];learning:{id:string;title:string;organization:string;completed:boolean}[];learning_visible:boolean}
-function EntryEditor({entry,onClose,save,pending,error}:{entry:Entry;onClose:()=>void;save:(entry:Entry)=>Promise<unknown>;pending:boolean;error:unknown}) {
- const [draft,setDraft]=useState(entry);
- async function submit(e:FormEvent){e.preventDefault();try{await save(draft);onClose();}catch{/* Preserve draft. */}}
- return <Modal open onClose={onClose} title={`${entry.title ? "Edit" : "Add"} ${sections[entry.kind].toLowerCase()}`}><form onSubmit={submit} className="space-y-4"><TextInput id="entry-title" label={entry.kind==="about" ? "Headline" : "Title"} required maxLength={160} value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})}/>{entry.kind!=="about" && <><TextInput id="entry-organization" label={entry.kind==="publication" ? "Journal or publisher" : "Organisation or institution"} maxLength={160} value={draft.organization} onChange={e=>setDraft({...draft,organization:e.target.value})}/><TextInput id="entry-period" label="Dates or period" placeholder="e.g. September 2024 – Present" maxLength={100} value={draft.period} onChange={e=>setDraft({...draft,period:e.target.value})}/></>}<TextArea id="entry-description" label="Description" rows={5} maxLength={8000} value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})}/><TextInput id="entry-url" label="Supporting link (optional)" type="url" placeholder="https://…" maxLength={2048} value={draft.url} onChange={e=>setDraft({...draft,url:e.target.value})}/><p className="text-xs text-muted">Visible to signed-in members. Add only information you want to share on your professional profile.</p><ErrorBanner error={error}/><div className="flex justify-end gap-2"><Button type="button" variant="secondary" onClick={onClose}>Cancel</Button><Button type="submit" loading={pending}>Save entry</Button></div></form></Modal>;
+interface Entry {
+  id: string;
+  kind: Kind;
+  title: string;
+  organization: string;
+  period: string;
+  description: string;
+  url: string;
 }
-export function ProfilePortfolio({userId,isSelf}:{userId:string;isSelf:boolean}) {
- const qc=useQueryClient();const [editing,setEditing]=useState<Entry>();const [removing,setRemoving]=useState<Entry>();
- const query=useQuery({queryKey:["portfolio",userId],queryFn:()=>apiFetch<Portfolio>(`/workspace/profiles/${userId}`)});
- const refresh=()=>qc.invalidateQueries({queryKey:["portfolio",userId]});
- const save=useMutation({mutationFn:(entry:Entry)=>apiFetch(`/workspace/portfolio/${entry.id}`,{method:"PUT",body:entry}),onSuccess:refresh});
- const remove=useMutation({mutationFn:(id:string)=>apiFetch(`/workspace/portfolio/${id}`,{method:"DELETE"}),onSuccess:()=>{setRemoving(undefined);void refresh();}});
- const visibility=useMutation({mutationFn:(visible:boolean)=>apiFetch('/workspace/profile/learning-visibility',{method:"PUT",body:{visible}}),onSuccess:refresh});
- return <div className="space-y-5">
-  <nav aria-label="Profile sections" className="flex flex-wrap gap-2">{Object.entries(sections).map(([key,label])=><a key={key} href={`#profile-${key}`} className="rounded-lg bg-slate-50 px-3 py-2 text-xs font-medium text-muted hover:text-accent-700">{label}</a>)}<a href="#profile-learning" className="rounded-lg bg-slate-50 px-3 py-2 text-xs font-medium text-muted">Learning</a></nav>
-  <ErrorBanner error={query.error}/>{query.isLoading && <p className="py-6 text-sm text-muted">Loading professional profile…</p>}
-  {query.data && <>{(Object.entries(sections) as [Kind,string][]).map(([kind,label])=>{
-   const entries=query.data.entries.filter(e=>e.kind===kind);
-   return <section key={kind} id={`profile-${kind}`} className="social-card scroll-mt-28 p-6"><div className="mb-4 flex items-center justify-between gap-3"><h2 className="text-lg font-semibold">{label}</h2>{isSelf && <button aria-label={`Add ${label.toLowerCase()}`} onClick={()=>{save.reset();setEditing({id:crypto.randomUUID(),kind,title:"",organization:"",period:"",description:"",url:""});}} className="rounded-lg p-2 text-accent-700 hover:bg-slate-50"><Plus size={18}/></button>}</div>{entries.length ? <div className="space-y-6">{entries.map(entry=><div key={entry.id}><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="break-words text-sm font-semibold">{entry.title}</h3>{entry.organization && <p className="mt-1 text-sm text-muted">{entry.organization}</p>}{entry.period && <p className="mt-1 text-xs text-faint">{entry.period}</p>}</div>{isSelf && <div className="flex shrink-0 gap-1"><button aria-label={`Edit ${entry.title}`} className="rounded p-2 text-muted hover:bg-slate-50" onClick={()=>{save.reset();setEditing(entry);}}><Pencil size={14}/></button><button aria-label={`Remove ${entry.title}`} className="rounded p-2 text-muted hover:bg-slate-50" onClick={()=>{remove.reset();setRemoving(entry);}}><Trash2 size={14}/></button></div>}</div>{entry.description && <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-muted">{entry.description}</p>}{entry.url && <a href={entry.url} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-accent-700">View supporting link <ArrowUpRight size={14}/></a>}</div>)}</div> : <p className="text-sm leading-6 text-faint">{isSelf ? `Add your ${label.toLowerCase()} to help colleagues get to know your work.` : `No ${label.toLowerCase()} shared yet.`}</p>}</section>;
-  })}
-  <section id="profile-learning" className="social-card scroll-mt-28 p-6"><h2 className="text-lg font-semibold">Learning</h2><p className="mt-2 text-sm leading-6 text-muted">Saved lessons and self-reported completion. Completion does not represent an accredited qualification.</p>{isSelf && <label className="my-4 flex items-center gap-2 text-sm"><input type="checkbox" checked={query.data.learning_visible} disabled={visibility.isPending} onChange={e=>visibility.mutate(e.target.checked)}/>Show my learning to other members</label>}<ErrorBanner error={visibility.error}/>{query.data.learning.length ? <div className="mt-5 space-y-4">{query.data.learning.map(lesson=><div key={lesson.id} className="flex items-start gap-3"><GraduationCap size={20} className="mt-1 shrink-0 text-accent-700"/><div><h3 className="text-sm font-semibold">{lesson.title}</h3><p className="mt-1 text-xs text-muted">{lesson.organization} · {lesson.completed ? "Completed" : "Saved to learn"}</p></div></div>)}</div> : <p className="mt-4 text-sm text-faint">{isSelf ? "Save lessons in Learning to build your personal learning list." : query.data.learning_visible ? "No saved lessons yet." : "This member has not shared their learning list."}</p>}{isSelf && <Link to="/learning" className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-accent-700">Explore learning <ArrowUpRight size={14}/></Link>}</section></>}
-  {editing && <EntryEditor key={editing.id} entry={editing} onClose={()=>setEditing(undefined)} save={save.mutateAsync} pending={save.isPending} error={save.error}/>}
-  <Modal open={!!removing} onClose={()=>setRemoving(undefined)} title="Remove profile entry"><p className="text-sm text-muted">Remove “{removing?.title}” from your profile?</p><ErrorBanner error={remove.error}/><div className="mt-5 flex justify-end gap-2"><Button variant="secondary" onClick={()=>setRemoving(undefined)}>Cancel</Button><Button variant="danger" loading={remove.isPending} onClick={()=>removing && remove.mutate(removing.id)}>Remove entry</Button></div></Modal>
- </div>;
+interface Portfolio {
+  entries: Entry[];
+  learning: { id: string; title: string; organization: string; completed: boolean }[];
+  learning_visible: boolean;
+}
+function EntryEditor({
+  entry,
+  onClose,
+  save,
+  pending,
+  error,
+}: {
+  entry: Entry;
+  onClose: () => void;
+  save: (entry: Entry) => Promise<unknown>;
+  pending: boolean;
+  error: unknown;
+}) {
+  const [draft, setDraft] = useState(entry);
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    try {
+      await save(draft);
+      onClose();
+    } catch {
+      /* Preserve draft. */
+    }
+  }
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={`${entry.title ? "Edit" : "Add"} ${sections[entry.kind].toLowerCase()}`}
+    >
+      <form onSubmit={submit} className="space-y-4">
+        <TextInput
+          id="entry-title"
+          label={entry.kind === "about" ? "Headline" : "Title"}
+          required
+          maxLength={160}
+          value={draft.title}
+          onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+        />
+        {entry.kind !== "about" && (
+          <>
+            <TextInput
+              id="entry-organization"
+              label={
+                entry.kind === "publication"
+                  ? "Journal or publisher"
+                  : "Organisation or institution"
+              }
+              maxLength={160}
+              value={draft.organization}
+              onChange={(e) => setDraft({ ...draft, organization: e.target.value })}
+            />
+            <TextInput
+              id="entry-period"
+              label="Dates or period"
+              placeholder="e.g. September 2024 – Present"
+              maxLength={100}
+              value={draft.period}
+              onChange={(e) => setDraft({ ...draft, period: e.target.value })}
+            />
+          </>
+        )}
+        <TextArea
+          id="entry-description"
+          label="Description"
+          rows={5}
+          maxLength={8000}
+          value={draft.description}
+          onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+        />
+        <TextInput
+          id="entry-url"
+          label="Supporting link (optional)"
+          type="url"
+          placeholder="https://…"
+          maxLength={2048}
+          value={draft.url}
+          onChange={(e) => setDraft({ ...draft, url: e.target.value })}
+        />
+        <p className="text-xs text-muted">
+          Visible to signed-in members. Add only information you want to share on your professional
+          profile.
+        </p>
+        <ErrorBanner error={error} />
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" loading={pending}>
+            Save entry
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+export function ProfilePortfolio({ userId, isSelf }: { userId: string; isSelf: boolean }) {
+  const qc = useQueryClient();
+  const [editing, setEditing] = useState<Entry>();
+  const [removing, setRemoving] = useState<Entry>();
+  const query = useQuery({
+    queryKey: ["portfolio", userId],
+    queryFn: () => apiFetch<Portfolio>(`/workspace/profiles/${userId}`),
+  });
+  const refresh = () => qc.invalidateQueries({ queryKey: ["portfolio", userId] });
+  const save = useMutation({
+    mutationFn: (entry: Entry) =>
+      apiFetch(`/workspace/portfolio/${entry.id}`, { method: "PUT", body: entry }),
+    onSuccess: refresh,
+  });
+  const remove = useMutation({
+    mutationFn: (id: string) => apiFetch(`/workspace/portfolio/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      setRemoving(undefined);
+      void refresh();
+    },
+  });
+  const visibility = useMutation({
+    mutationFn: (visible: boolean) =>
+      apiFetch("/workspace/profile/learning-visibility", { method: "PUT", body: { visible } }),
+    onSuccess: refresh,
+  });
+  return (
+    <div className="space-y-5">
+      <nav aria-label="Profile sections" className="flex flex-wrap gap-2">
+        {Object.entries(sections).map(([key, label]) => (
+          <a
+            key={key}
+            href={`#profile-${key}`}
+            className="rounded-lg bg-slate-50 px-3 py-2 text-xs font-medium text-muted hover:text-accent-700"
+          >
+            {label}
+          </a>
+        ))}
+        <a
+          href="#profile-learning"
+          className="rounded-lg bg-slate-50 px-3 py-2 text-xs font-medium text-muted"
+        >
+          Learning
+        </a>
+      </nav>
+      <ErrorBanner error={query.error} />
+      {query.isLoading && <p className="py-6 text-sm text-muted">Loading professional profile…</p>}
+      {query.data && (
+        <>
+          {(Object.entries(sections) as [Kind, string][]).map(([kind, label]) => {
+            const entries = query.data.entries.filter((e) => e.kind === kind);
+            return (
+              <section key={kind} id={`profile-${kind}`} className="social-card scroll-mt-28 p-6">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <h2 className="text-lg font-semibold">{label}</h2>
+                  {isSelf && (
+                    <button
+                      aria-label={`Add ${label.toLowerCase()}`}
+                      onClick={() => {
+                        save.reset();
+                        setEditing({
+                          id: crypto.randomUUID(),
+                          kind,
+                          title: "",
+                          organization: "",
+                          period: "",
+                          description: "",
+                          url: "",
+                        });
+                      }}
+                      className="rounded-lg p-2 text-accent-700 hover:bg-slate-50"
+                    >
+                      <Plus size={18} />
+                    </button>
+                  )}
+                </div>
+                {entries.length ? (
+                  <div className="space-y-6">
+                    {entries.map((entry) => (
+                      <div key={entry.id}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <h3 className="break-words text-sm font-semibold">{entry.title}</h3>
+                            {entry.organization && (
+                              <p className="mt-1 text-sm text-muted">{entry.organization}</p>
+                            )}
+                            {entry.period && (
+                              <p className="mt-1 text-xs text-faint">{entry.period}</p>
+                            )}
+                          </div>
+                          {isSelf && (
+                            <div className="flex shrink-0 gap-1">
+                              <button
+                                aria-label={`Edit ${entry.title}`}
+                                className="rounded p-2 text-muted hover:bg-slate-50"
+                                onClick={() => {
+                                  save.reset();
+                                  setEditing(entry);
+                                }}
+                              >
+                                <Pencil size={14} />
+                              </button>
+                              <button
+                                aria-label={`Remove ${entry.title}`}
+                                className="rounded p-2 text-muted hover:bg-slate-50"
+                                onClick={() => {
+                                  remove.reset();
+                                  setRemoving(entry);
+                                }}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        {entry.description && (
+                          <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-muted">
+                            {entry.description}
+                          </p>
+                        )}
+                        {entry.url && (
+                          <a
+                            href={entry.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-accent-700"
+                          >
+                            View supporting link <ArrowUpRight size={14} />
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm leading-6 text-faint">
+                    {isSelf
+                      ? `Add your ${label.toLowerCase()} to help colleagues get to know your work.`
+                      : `No ${label.toLowerCase()} shared yet.`}
+                  </p>
+                )}
+              </section>
+            );
+          })}
+          <section id="profile-learning" className="social-card scroll-mt-28 p-6">
+            <h2 className="text-lg font-semibold">Learning</h2>
+            <p className="mt-2 text-sm leading-6 text-muted">
+              Saved lessons and self-reported completion. Completion does not represent an
+              accredited qualification.
+            </p>
+            {isSelf && (
+              <label className="my-4 flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={query.data.learning_visible}
+                  disabled={visibility.isPending}
+                  onChange={(e) => visibility.mutate(e.target.checked)}
+                />
+                Show my learning to other members
+              </label>
+            )}
+            <ErrorBanner error={visibility.error} />
+            {query.data.learning.length ? (
+              <div className="mt-5 space-y-4">
+                {query.data.learning.map((lesson) => (
+                  <div key={lesson.id} className="flex items-start gap-3">
+                    <GraduationCap size={20} className="mt-1 shrink-0 text-accent-700" />
+                    <div>
+                      <h3 className="text-sm font-semibold">{lesson.title}</h3>
+                      <p className="mt-1 text-xs text-muted">
+                        {lesson.organization} · {lesson.completed ? "Completed" : "Saved to learn"}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-4 text-sm text-faint">
+                {isSelf
+                  ? "Save lessons in Learning to build your personal learning list."
+                  : query.data.learning_visible
+                    ? "No saved lessons yet."
+                    : "This member has not shared their learning list."}
+              </p>
+            )}
+            {isSelf && (
+              <Link
+                to="/learning"
+                className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-accent-700"
+              >
+                Explore learning <ArrowUpRight size={14} />
+              </Link>
+            )}
+          </section>
+        </>
+      )}
+      {editing && (
+        <EntryEditor
+          key={editing.id}
+          entry={editing}
+          onClose={() => setEditing(undefined)}
+          save={save.mutateAsync}
+          pending={save.isPending}
+          error={save.error}
+        />
+      )}
+      <Modal open={!!removing} onClose={() => setRemoving(undefined)} title="Remove profile entry">
+        <p className="text-sm text-muted">Remove “{removing?.title}” from your profile?</p>
+        <ErrorBanner error={remove.error} />
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => setRemoving(undefined)}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            loading={remove.isPending}
+            onClick={() => removing && remove.mutate(removing.id)}
+          >
+            Remove entry
+          </Button>
+        </div>
+      </Modal>
+    </div>
+  );
 }

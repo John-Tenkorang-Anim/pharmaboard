@@ -1,6 +1,15 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Users, ArrowUpRight, MessageSquare, PenLine, Compass, ArrowLeft, Search, RefreshCw } from "lucide-react";
+import {
+  Users,
+  ArrowUpRight,
+  MessageSquare,
+  PenLine,
+  Compass,
+  ArrowLeft,
+  Search,
+  RefreshCw,
+} from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -38,13 +47,13 @@ export function PostComposer({ scope = "everyone" }: { scope?: FeedScope }) {
         <div className="flex items-start gap-3">
           {user && <Avatar name={user.display_name} size="md" />}
           <textarea
-            aria-label="Create a community post"
+            aria-label="Create a post"
             onFocus={() => setOpen(true)}
             value={body}
             maxLength={4000}
             onChange={(e) => setBody(e.target.value)}
             rows={open ? 4 : 1}
-            placeholder="What’s on your mind, professionally?"
+            placeholder="What’s on your mind?"
             className="min-w-0 flex-1 resize-none rounded-xl bg-[#F6F7F9] px-4 py-3 text-sm leading-6 placeholder:text-muted focus:outline-none"
           />
         </div>
@@ -247,11 +256,7 @@ export function PostPage() {
       </Link>
       <h1 className="mb-5 text-2xl font-semibold">Conversation</h1>
       <ErrorBanner error={post.error} />
-      {post.isLoading ? (
-        <SkeletonPost />
-      ) : post.data ? (
-        <PostCard post={post.data} defaultExpanded />
-      ) : null}
+      {post.isLoading ? <SkeletonPost /> : post.data ? <PostCard post={post.data} /> : null}
     </AppShell>
   );
 }

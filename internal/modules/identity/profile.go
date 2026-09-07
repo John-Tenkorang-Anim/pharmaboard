@@ -11,6 +11,7 @@ import (
 // directory is for finding colleagues, not for harvesting their numbers
 // (docs/technical-design.md section 12, "scraping professional directory").
 type Profile struct {
+	Institution       *string `json:"institution"`
 	ID                uuid.UUID
 	DisplayName       string
 	AccountKind       AccountKind

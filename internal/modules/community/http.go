@@ -447,6 +447,7 @@ func profileJSON(p identity.Profile) map[string]any {
 		"account_kind":       p.AccountKind,
 		"verification_state": p.VerificationState,
 		"practice_area":      p.PracticeArea,
+		"institution":        p.Institution,
 		"region_code":        p.RegionCode,
 	}
 }

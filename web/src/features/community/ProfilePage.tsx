@@ -1,4 +1,5 @@
-import { useParams, Link } from "react-router-dom";
+import { useCreateConversation } from "@/features/messaging/api";
+import { useParams, useNavigate } from "react-router-dom";
 import { MapPin, Briefcase, MessageCircle, BadgeCheck } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Avatar } from "@/components/ui/Avatar";
@@ -25,6 +26,8 @@ export function ProfilePage() {
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, error } = useProfile(id);
   const setFollow = useSetFollow();
+  const conversation = useCreateConversation();
+  const navigate = useNavigate();
 
   if (isLoading) {
     return (
@@ -59,12 +62,20 @@ export function ProfilePage() {
             <div className="flex items-center gap-2 pb-1">
               {!is_self && (
                 <>
-                  <Link to="/messaging">
-                    <Button variant="secondary" size="sm">
-                      <MessageCircle className="size-4" />
-                      Message
-                    </Button>
-                  </Link>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    loading={conversation.isPending}
+                    onClick={() =>
+                      conversation.mutate(
+                        { participant_ids: [profile.id] },
+                        { onSuccess: (c) => navigate(`/messaging/${c.id}`) },
+                      )
+                    }
+                  >
+                    <MessageCircle className="size-4" />
+                    Message
+                  </Button>
                   <Button
                     variant={viewer_follows ? "secondary" : "primary"}
                     size="sm"
@@ -92,6 +103,7 @@ export function ProfilePage() {
             )}
           </div>
 
+          {profile.institution && <p className="mt-3 text-sm text-muted">{profile.institution}</p>}
           <div className="mt-3 flex items-center gap-3">
             <VerificationChip state={profile.verification_state} />
             {profile.council_reg_no && (
@@ -110,7 +122,7 @@ export function ProfilePage() {
         </div>
       </Card>
 
-      <ErrorBanner error={setFollow.error} />
+      <ErrorBanner error={setFollow.error || conversation.error} />
       <ProfilePortfolio key={profile.id} userId={profile.id} isSelf={is_self} />
       <h2 className="mb-3 mt-8 px-1 text-sm font-bold text-muted">Recent activity</h2>
 

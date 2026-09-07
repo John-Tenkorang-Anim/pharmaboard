@@ -6,7 +6,7 @@
 // back PascalCase. That inconsistency is a documented backend simplification,
 // not a frontend bug — do not "fix" it here without fixing the handler.
 
-export type AccountKind = "pharmacist" | "student" | "organisation";
+export type AccountKind = "pharmacist" | "student" | "organisation" | "professional" | "educator";
 export type VerificationState = "unverified" | "pending" | "verified" | "revoked";
 
 export interface User {
@@ -16,6 +16,7 @@ export interface User {
   verification_state: VerificationState;
   region_code: string | null;
   practice_area: string | null;
+  institution?: string | null;
   created_at: string;
   version: number;
 }
@@ -153,6 +154,7 @@ export interface PublicProfile {
   account_kind: AccountKind;
   verification_state: VerificationState;
   practice_area: string | null;
+  institution?: string | null;
   region_code: string | null;
   council_reg_no?: string | null;
 }

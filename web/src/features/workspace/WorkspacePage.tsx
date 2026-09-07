@@ -1,3 +1,4 @@
+import { platform } from "@/lib/platform";
 import { useState, useEffect, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
@@ -34,13 +35,12 @@ import {
 } from "./api";
 const config = {
   learning: {
-    eyebrow: "PHARMABOARD ACADEMY",
+    eyebrow: `${platform.name.toUpperCase()} ACADEMY`,
     title: "Keep your curiosity alive.",
-    description:
-      "Learn from your community. Build a personal library of pharmacy lectures, practical insights, and professional development.",
+    description: `Learn from your community. Build a personal library of ${platform.discipline.toLowerCase()} lectures, practical insights, and professional development.`,
     action: "Share a lesson",
     icon: GraduationCap,
-    categories: ["All topics", "Clinical pharmacy", "Research", "Leadership", "Career development"],
+    categories: ["All topics", ...platform.learningTopics],
   },
   jobs: {
     eyebrow: "CAREER OPPORTUNITIES",
@@ -319,19 +319,12 @@ export function WorkspacePage({ kind }: { kind: ResourceKind }) {
         </div>
       </div>
       {kind === "sessions" && (
-        <div className="mb-7">
+        <div className="mb-5 flex justify-end">
           <Link
             to="/messaging"
-            className="flex items-center gap-4 border-y border-hairline bg-white p-5"
+            className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted hover:bg-slate-50 hover:text-accent-700"
           >
-            <span className="text-accent-600">
-              <Video />
-            </span>
-            <div>
-              <h2 className="font-semibold">Start with a conversation</h2>
-              <p className="mt-1 text-sm text-muted">Group messages and instant video calls</p>
-            </div>
-            <ArrowUpRight className="ml-auto shrink-0" size={18} />
+            Open group messages <ArrowUpRight size={13} />
           </Link>
         </div>
       )}
@@ -386,7 +379,7 @@ export function WorkspacePage({ kind }: { kind: ResourceKind }) {
           <span className="sr-only">Loading resources</span>
         </div>
       ) : !error && items.length === 0 ? (
-        <div className="border-y border-hairline bg-white px-6 py-16 text-center">
+        <div className="rounded-xl bg-slate-50 px-6 py-16 text-center">
           <Icon className="mx-auto mb-4 text-accent-600" size={36} />
           <h2 className="text-lg font-semibold">
             {search || savedOnly || category !== c.categories[0]
@@ -418,7 +411,12 @@ export function WorkspacePage({ kind }: { kind: ResourceKind }) {
           className={`grid gap-5 ${kind === "learning" ? "md:grid-cols-2 xl:grid-cols-3" : "grid-cols-1"}`}
         >
           {items.map((v) => (
-            <article key={v.id} className={kind === "jobs" ? "social-card overflow-hidden p-5" : "overflow-hidden border-b border-hairline bg-white"}>
+            <article
+              key={v.id}
+              className={
+                kind === "jobs" ? "social-card overflow-hidden p-5" : "overflow-hidden bg-white"
+              }
+            >
               {kind === "learning" && (
                 <button
                   onClick={() => setSelected(v)}
@@ -475,7 +473,7 @@ export function WorkspacePage({ kind }: { kind: ResourceKind }) {
                   </span>
                 )}
                 {kind === "sessions" && v.starts_at && (
-                  <div className="absolute left-0 top-6 w-11 border-y border-hairline py-1 text-center">
+                  <div className="absolute left-0 top-6 w-11 rounded-lg bg-slate-50 py-1 text-center">
                     <span className="block text-[10px] font-medium uppercase text-accent-700">
                       {new Date(v.starts_at).toLocaleString(undefined, { month: "short" })}
                     </span>
