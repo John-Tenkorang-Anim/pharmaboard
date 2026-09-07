@@ -52,6 +52,14 @@ make check              # unit tests only; DB-backed tests skip themselves
 make test-integration   # same suite, against a real Postgres
 ```
 
+## Deploying
+
+`render.yaml` provisions the database, API, and worker on Render as a
+Blueprint. See [docs/deploy-render.md](docs/deploy-render.md) — in
+particular, migrations are applied manually there too (same reason as
+above), and the background worker has no free tier on Render, unlike the
+API and database.
+
 ## Repository map
 
 ```text

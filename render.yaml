@@ -1,0 +1,103 @@
+## PharmaBoard — Render Blueprint
+##
+## Provisions the managed PostgreSQL instance and the two Go processes the
+## backend actually needs: the API (`serve`) and the background worker
+## (`worker` — notice dispatch, the safe-watermark publisher, the
+## idempotency-key janitor). `cmd/pharmaboard`'s `migrate` subcommand is
+## deliberately unimplemented (see its comment in main.go) — migrations are
+## not run automatically here. See docs/deploy-render.md for why, and for
+## the manual step required before the first deploy and after every new
+## migration file.
+##
+## IMPORTANT — read before trusting the plan values below:
+## - Render's Background Worker service type has **no free tier** (Render
+##   docs, "Free instances" page, checked September 2026). The worker isn't
+##   optional for this app — without it, published notices never dispatch
+##   and /v1/sync's safe watermark never advances — so it's pinned to the
+##   cheapest paid compute plan below rather than left on `free`.
+## - The API service and database below default to `free` to get a first
+##   deploy running cheaply. Free Postgres on Render expires 30 days after
+##   creation (14-day grace period), caps out at 1GB, and has no backups.
+##   Free web services spin down after 15 minutes idle (cold start on the
+##   next request) and are capped at 750 instance-hours/month. Fine for a
+##   demo; upgrade both `plan:` values below before anything real depends on
+##   this.
+
+databases:
+  - name: pharmaboard-db
+    plan: free
+    region: oregon
+
+services:
+  - name: pharmaboard-api
+    type: web
+    runtime: go
+    region: oregon
+    plan: free
+    buildCommand: go build -o bin/pharmaboard ./cmd/pharmaboard
+    # Render sets $PORT for every web service (default 10000) and proxies
+    # to it; PHARMABOARD_HTTP_ADDR must be in ":port" form (see
+    # internal/platform/config/config.go), so it's assembled at start time
+    # rather than hardcoded as a static env var.
+    startCommand: 'PHARMABOARD_HTTP_ADDR=":$PORT" ./bin/pharmaboard serve'
+    healthCheckPath: /readyz
+    envVars:
+      - key: PHARMABOARD_ENV
+        value: production
+      - key: PHARMABOARD_LOG_LEVEL
+        value: info
+      - key: PHARMABOARD_DATABASE_URL
+        fromDatabase:
+          name: pharmaboard-db
+          property: connectionString
+      - key: PHARMABOARD_ADMIN_BOOTSTRAP_TOKEN
+        generateValue: true
+      # The deployed web console's origin(s), comma-separated — required in
+      # production; there is no dev-mode Origin-reflection fallback here.
+      - key: PHARMABOARD_ALLOWED_ORIGINS
+        sync: false
+      # config.Load() requires PHARMABOARD_OTP_PROVIDER=twilio whenever
+      # PHARMABOARD_ENV=production — the dev-mode "code echoed back in the
+      # response" OTP path is refused outright.
+      - key: PHARMABOARD_OTP_PROVIDER
+        value: twilio
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_VERIFY_SERVICE_SID
+        sync: false
+
+  - name: pharmaboard-worker
+    type: worker
+    runtime: go
+    region: oregon
+    # No free tier exists for this service type — see the note at the top
+    # of this file. 0.5c-512mb is the cheapest paid compute plan Render
+    # offers as of September 2026; check render.com/docs/blueprint-spec for
+    # the current plan list before relying on this name.
+    plan: 0.5c-512mb
+    buildCommand: go build -o bin/pharmaboard ./cmd/pharmaboard
+    startCommand: ./bin/pharmaboard worker
+    envVars:
+      - key: PHARMABOARD_ENV
+        value: production
+      - key: PHARMABOARD_LOG_LEVEL
+        value: info
+      - key: PHARMABOARD_DATABASE_URL
+        fromDatabase:
+          name: pharmaboard-db
+          property: connectionString
+      # config.Load() runs identically for `serve` and `worker` — the
+      # worker never calls Twilio, but it still fails validation and
+      # crash-loops on boot without these three set to real values,
+      # because PHARMABOARD_ENV=production forces PHARMABOARD_OTP_PROVIDER
+      # to twilio regardless of which subcommand is running.
+      - key: PHARMABOARD_OTP_PROVIDER
+        value: twilio
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_VERIFY_SERVICE_SID
+        sync: false
