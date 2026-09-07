@@ -1,11 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
-import type { AudienceRule, DeliveryReport, Notice, NoticeListResponse, NoticeSeverity } from "@/lib/types";
+import type {
+  AudienceRule,
+  DeliveryReport,
+  Notice,
+  NoticeListResponse,
+  NoticeSeverity,
+} from "@/lib/types";
 
 export function useNotices(publishedOnly: boolean) {
   return useQuery({
     queryKey: ["notices", { publishedOnly }],
-    queryFn: () => apiFetch<NoticeListResponse>(`/notices?published_only=${publishedOnly}&limit=100`),
+    queryFn: () =>
+      apiFetch<NoticeListResponse>(`/notices?published_only=${publishedOnly}&limit=100`),
   });
 }
 
@@ -39,7 +46,8 @@ interface CreateNoticeInput {
 export function useCreateNotice() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: CreateNoticeInput) => apiFetch<Notice>("/notices", { method: "POST", body: input }),
+    mutationFn: (input: CreateNoticeInput) =>
+      apiFetch<Notice>("/notices", { method: "POST", body: input }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notices"] }),
   });
 }
@@ -47,8 +55,15 @@ export function useCreateNotice() {
 function useTransition(path: (id: string) => string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, version, ...rest }: { id: string; version: number; [key: string]: unknown }) =>
-      apiFetch(path(id), { method: "POST", body: { version, ...rest } }),
+    mutationFn: ({
+      id,
+      version,
+      ...rest
+    }: {
+      id: string;
+      version: number;
+      [key: string]: unknown;
+    }) => apiFetch(path(id), { method: "POST", body: { version, ...rest } }),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["notices", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["notices", { publishedOnly: false }] });

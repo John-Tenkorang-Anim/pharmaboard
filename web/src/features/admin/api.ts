@@ -11,7 +11,8 @@ export function useAuditEvents() {
 
 export function useBootstrap() {
   return useMutation({
-    mutationFn: (token: string) => apiFetch("/admin/bootstrap", { method: "POST", body: { token } }),
+    mutationFn: (token: string) =>
+      apiFetch("/admin/bootstrap", { method: "POST", body: { token } }),
   });
 }
 

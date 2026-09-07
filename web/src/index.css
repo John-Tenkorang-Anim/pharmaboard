@@ -5,59 +5,97 @@
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
   }
 
   body {
     font-family: theme("fontFamily.sans");
   }
 
-  * {
-    @apply border-rule;
-  }
-
   ::selection {
-    @apply bg-ink text-paper;
+    @apply bg-accent-50 text-accent-700;
   }
 
-  /* Newsreader is a text face with an optical-size axis — let it use the
-     display cut at large sizes and the text cut at reading sizes. */
-  .font-display {
-    font-optical-sizing: auto;
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent-600/40 ring-offset-1 ring-offset-canvas;
   }
 }
 
 @layer components {
-  /* The editorial kicker: tracked-out caps above a headline, the way a
-     newspaper labels a section or a standfirst. Carries severity here. */
-  .kicker {
-    @apply font-sans text-kicker font-semibold uppercase;
+  /* Plain and bordered, no shadow — the default surface for everything. */
+  .card {
+    @apply rounded-lg border border-hairline bg-surface;
   }
 
-  .label-caps {
-    @apply font-sans text-label font-medium uppercase text-ink-faint;
+  /* A table-like list: one bordered container, rows separated by a
+     hairline, no per-row radius/shadow/accent bar. This is the default
+     shape for any list of similar records (notices, threads, directory
+     entries) — the pattern real dashboards use, not a stack of boxes. */
+  .list-card {
+    @apply overflow-hidden rounded-lg border border-hairline bg-surface;
+  }
+  .list-row {
+    @apply block transition-colors hover:bg-accent-50/40;
+  }
+  .list-row + .list-row {
+    @apply border-t border-hairline;
   }
 
-  .rule-hair {
-    @apply border-t border-rule;
+  .eyebrow {
+    @apply text-[0.6875rem] font-semibold uppercase tracking-[0.06em] text-muted;
   }
 
-  .rule-heavy {
-    @apply border-t-2 border-rule-strong;
+  .marker {
+    @apply inline-flex items-center gap-1.5 text-xs font-medium text-ink;
+  }
+  .marker-dot {
+    @apply size-[7px] shrink-0 rounded-full;
   }
 
-  .focus-ink {
-    @apply outline-none ring-1 ring-ink ring-offset-2 ring-offset-paper;
+  /* The accent-pill segmented control used for feed/list filters. */
+  .segment {
+    @apply inline-flex items-center gap-0.5 rounded-full bg-hairline/60 p-1;
+  }
+  .segment-item {
+    @apply rounded-full px-3.5 py-1.5 text-[0.8125rem] font-medium text-muted transition-colors;
+  }
+  .segment-item[data-active="true"] {
+    @apply bg-accent-600 text-white;
+  }
+
+  .shimmer {
+    @apply relative overflow-hidden bg-hairline;
+  }
+  .shimmer::after {
+    @apply absolute inset-0 -translate-x-full;
+    content: "";
+    background-image: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0,
+      rgba(255, 255, 255, 0.6) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    animation: shimmer 1.6s infinite;
   }
 
   .scrollbar-thin::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+    width: 8px;
+    height: 8px;
   }
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    @apply bg-rule;
+    @apply rounded-full bg-divider;
   }
   .scrollbar-thin::-webkit-scrollbar-track {
     background: transparent;
+  }
+}
+
+@layer utilities {
+  .tnum {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
   }
 }

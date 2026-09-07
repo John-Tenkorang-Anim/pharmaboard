@@ -1,55 +1,74 @@
 import clsx from "clsx";
 import type { NoticeSeverity, NoticeState, VerificationState } from "@/lib/types";
 
-// Severity is the one thing this product exists to communicate, so it is
-// carried structurally — a tracked-caps kicker plus the weight of the rule
-// above the item — not by a pastel pill that makes a drug-safety alert look
-// like a UI chip. See severityRule() for the rule half of the pairing.
-
-const severityInk: Record<NoticeSeverity, string> = {
-  info: "text-signal-info",
-  advisory: "text-signal-advisory",
-  urgent: "text-signal-urgent",
-  critical: "text-signal-critical",
-};
-
-const severityWording: Record<NoticeSeverity, string> = {
-  info: "Information",
-  advisory: "Advisory",
-  urgent: "Urgent",
-  critical: "Critical notice",
-};
-
-export function SeverityKicker({
-  severity,
+/**
+ * Chip is a status marker: a coloured dot plus plain text, no filled
+ * background. Colour carries the meaning here, not a filled surface.
+ */
+export function Chip({
+  children,
   className,
+  dot,
 }: {
-  severity: NoticeSeverity;
+  children: React.ReactNode;
   className?: string;
+  dot?: string;
 }) {
   return (
-    <span className={clsx("kicker", severityInk[severity], className)}>
-      {severityWording[severity]}
+    <span className={clsx("marker", className)}>
+      {dot && <span className={clsx("marker-dot", dot)} />}
+      {children}
     </span>
   );
 }
 
-/** Rule thickness encodes severity: a critical notice is physically heavier
- *  in the page than an informational one, before you read a word of it. */
-export function severityRule(severity: NoticeSeverity): string {
+const severityStyles: Record<NoticeSeverity, { dot: string; text: string; label: string }> = {
+  info: { dot: "bg-severity-info", text: "text-severity-info", label: "Info" },
+  advisory: { dot: "bg-severity-advisory", text: "text-severity-advisory", label: "Advisory" },
+  urgent: { dot: "bg-severity-urgent", text: "text-severity-urgent", label: "Urgent" },
+  critical: {
+    dot: "bg-severity-critical",
+    text: "text-severity-critical font-semibold",
+    label: "Critical",
+  },
+};
+
+export function SeverityChip({ severity }: { severity: NoticeSeverity }) {
+  const s = severityStyles[severity];
+  return (
+    <Chip className={s.text} dot={s.dot}>
+      {s.label}
+    </Chip>
+  );
+}
+
+/**
+ * Severity is still structural, not just a marker: a left rule on the
+ * notice's own card, thicker and more saturated the more severe it is —
+ * this pairs with `severityStyles` above and both must stay in sync.
+ */
+export function severityAccent(severity: NoticeSeverity): string {
   switch (severity) {
     case "critical":
-      return "border-t-[3px] border-signal-critical";
+      return "border-l-4 border-l-severity-critical";
     case "urgent":
-      return "border-t-2 border-signal-urgent";
+      return "border-l-4 border-l-severity-urgent";
     case "advisory":
-      return "border-t border-signal-advisory";
+      return "border-l-2 border-l-severity-advisory";
     case "info":
-      return "border-t border-rule";
+      return "border-l-2 border-l-severity-info";
   }
 }
 
-const stateWording: Record<NoticeState, string> = {
+const stateStyles: Record<NoticeState, { dot: string; text: string }> = {
+  draft: { dot: "bg-faint", text: "text-muted" },
+  in_review: { dot: "bg-severity-advisory", text: "text-severity-advisory" },
+  approved: { dot: "bg-severity-info", text: "text-severity-info" },
+  published: { dot: "bg-accent-600", text: "text-accent-700" },
+  withdrawn: { dot: "bg-severity-critical", text: "text-severity-critical" },
+};
+
+const stateLabels: Record<NoticeState, string> = {
   draft: "Draft",
   in_review: "In review",
   approved: "Approved",
@@ -57,29 +76,28 @@ const stateWording: Record<NoticeState, string> = {
   withdrawn: "Withdrawn",
 };
 
-export function StateMark({ state }: { state: NoticeState }) {
+export function StateChip({ state }: { state: NoticeState }) {
+  const s = stateStyles[state];
   return (
-    <span
-      className={clsx(
-        "label-caps",
-        state === "withdrawn" ? "text-signal-critical" : "text-ink-faint",
-      )}
-    >
-      {stateWording[state]}
-    </span>
+    <Chip className={s.text} dot={s.dot}>
+      {stateLabels[state]}
+    </Chip>
   );
 }
 
-export function VerificationMark({ state }: { state: VerificationState }) {
-  const verified = state === "verified";
+const verificationStyles: Record<VerificationState, { dot: string; text: string; label: string }> =
+  {
+    unverified: { dot: "bg-faint", text: "text-muted", label: "Unverified" },
+    pending: { dot: "bg-severity-advisory", text: "text-severity-advisory", label: "Pending" },
+    verified: { dot: "bg-accent-600", text: "text-accent-700", label: "Verified" },
+    revoked: { dot: "bg-severity-critical", text: "text-severity-critical", label: "Revoked" },
+  };
+
+export function VerificationChip({ state }: { state: VerificationState }) {
+  const s = verificationStyles[state];
   return (
-    <span
-      className={clsx(
-        "label-caps",
-        verified ? "text-ink-muted" : state === "revoked" ? "text-signal-critical" : "text-ink-faint",
-      )}
-    >
-      {verified ? "Verified" : state}
-    </span>
+    <Chip className={s.text} dot={s.dot}>
+      {s.label}
+    </Chip>
   );
 }

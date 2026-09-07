@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: 'class', theme: { extend: { 'colors': { 'surface': '#f8f9ff', 'surface-container': '#e6eeff', 'on-surface': '#0d1c2e', 'background': '#f8f9ff', 'surface-variant': '#d5e3fc', 'primary-fixed': '#d8e2ff', 'primary-container': '#0a1e3f', 'secondary': '#006a61', 'on-error-container': '#93000a', 'surface-dim': '#ccdbf3', 'inverse-primary': '#b5c6f0', 'surface-container-high': '#dce9ff', 'secondary-container': '#86f2e4', 'secondary-fixed': '#89f5e7', 'error-container': '#ffdad6', 'on-tertiary-fixed-variant': '#93000b', 'outline-variant': '#c5c6cf', 'on-primary-fixed': '#061b3c', 'on-primary-fixed-variant': '#35466a', 'on-secondary': '#ffffff', 'surface-tint': '#4d5e83', 'on-tertiary': '#ffffff', 'inverse-surface': '#233144', 'on-secondary-fixed-variant': '#005049', 'primary-fixed-dim': '#b5c6f0', 'inverse-on-surface': '#eaf1ff', 'surface-bright': '#f8f9ff', 'surface-container-lowest': '#ffffff', 'on-background': '#0d1c2e', 'tertiary': '#160000', 'tertiary-fixed': '#ffdad6', 'tertiary-fixed-dim': '#ffb4ab', 'on-secondary-container': '#006f66', 'on-surface-variant': '#44474e', 'on-primary-container': '#7586ad', 'surface-container-highest': '#d5e3fc', 'outline': '#75777f', 'error': '#ba1a1a', 'secondary-fixed-dim': '#6bd8cb', 'on-tertiary-fixed': '#410002', 'surface-container-low': '#eff4ff', 'on-tertiary-container': '#fa3d38', 'tertiary-container': '#470002', 'on-primary': '#ffffff', 'primary': '#000517', 'on-secondary-fixed': '#00201d', 'on-error': '#ffffff' }, 'borderRadius': { 'DEFAULT': '0.125rem', 'lg': '0.25rem', 'xl': '0.5rem', 'full': '0.75rem' }, 'spacing': { 'space-base': '1rem', 'space-2xl': '3rem', 'margin-desktop': '2rem', 'gutter-mobile': '0.75rem', 'space-lg': '1.5rem', 'space-xl': '2rem', 'space-xs': '0.25rem', 'margin-mobile': '1rem', 'space-xxs': '0.125rem', 'space-sm': '0.5rem', 'margin-tablet': '1.5rem', 'gutter-tablet': '1rem', 'space-md': '0.75rem', 'gutter-desktop': '1.5rem' }, 'fontFamily': { 'headline-lg-mobile': ['Public Sans'], 'headline-md': ['Public Sans'], 'label-md': ['Public Sans'], 'headline-lg': ['Public Sans'], 'headline-xl-mobile': ['Public Sans'], 'body-lg': ['Public Sans'], 'label-sm': ['Public Sans'], 'code-mono': ['Public Sans'], 'headline-sm': ['Public Sans'], 'body-sm': ['Public Sans'], 'headline-xl': ['Public Sans'], 'body-md': ['Public Sans'] }, 'fontSize': { 'headline-lg-mobile': ['20px', { 'lineHeight': '28px', 'letterSpacing': '-0.01em', 'fontWeight': '700' }], 'headline-md': ['18px', { 'lineHeight': '26px', 'letterSpacing': '-0.01em', 'fontWeight': '600' }], 'label-md': ['12px', { 'lineHeight': '16px', 'letterSpacing': '0.04em', 'fontWeight': '600' }], 'headline-lg': ['24px', { 'lineHeight': '32px', 'letterSpacing': '-0.015em', 'fontWeight': '700' }], 'headline-xl-mobile': ['26px', { 'lineHeight': '34px', 'letterSpacing': '-0.015em', 'fontWeight': '700' }], 'body-lg': ['16px', { 'lineHeight': '24px', 'letterSpacing': '0em', 'fontWeight': '400' }], 'label-sm': ['11px', { 'lineHeight': '14px', 'letterSpacing': '0.06em', 'fontWeight': '600' }], 'code-mono': ['12px', { 'lineHeight': '16px', 'letterSpacing': '0.02em', 'fontWeight': '500' }], 'headline-sm': ['16px', { 'lineHeight': '24px', 'letterSpacing': '-0.005em', 'fontWeight': '600' }], 'body-sm': ['13px', { 'lineHeight': '18px', 'letterSpacing': '0em', 'fontWeight': '400' }], 'headline-xl': ['32px', { 'lineHeight': '40px', 'letterSpacing': '-0.02em', 'fontWeight': '700' }], 'body-md': ['14px', { 'lineHeight': '20px', 'letterSpacing': '0em', 'fontWeight': '400' }] } } } };</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased selection:bg-secondary selection:text-on-secondary"><header class="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 max-w-7xl mx-auto px-margin-desktop flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-md flex-shrink-0"><a class="flex items-center gap-space-xs" data-path="feed" href="#"><img alt="Brand logo. - Primary color: #0a1e3f
+- Font: publicSans
+- Mode: light
+- Roundness: rounded-sm
+" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1WPjRs2SFlkNR4kbsZsoxPoY7GBEuHAPlEFNQEBQNnhcbTMFcADbK2eJYATLkhm8QCdvMDqDlCHbJK1uSQw6sDV5oZoyUWtmXS0dJ9itUhDn70i0Aw3VD3DLXY4lNmSYANf5C5-vfG92zm2rv-PticZORL0HzjvCFr5r7tNN6QU4-xtfdDXz9UvmCIRFVfqPHw17j_j5iHg3lftDszN_u-rwvyqeGbEywNDoqyvk08dbicSvY6Luky1hw05"/><span class="font-headline-sm text-headline-sm text-primary-container tracking-tight hidden sm:inline-block">PharmaBoard</span></a><div class="relative hidden lg:block w-80 xl:w-96"><span class="material-symbols-outlined absolute left-space-sm top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span><input class="w-full bg-surface-container-low font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant pl-9 pr-space-sm py-space-xs rounded-lg outline-none focus:bg-surface-container-lowest shadow-[0_0_0_1px_rgba(0,106,97,0.3)] transition-all" placeholder="Search verified practitioners, case discussions, drug alerts..." type="text"/></div></div><nav class="flex items-center gap-space-xxs flex-shrink-0" data-active-classes="bg-primary-container text-on-primary font-label-md text-label-md rounded-lg shadow-sm"><a aria-current="page" class="px-space-sm py-space-xs transition-colors uppercase tracking-wider bg-primary-container text-on-primary font-label-md text-label-md rounded-lg shadow-sm" data-path="feed" href="#">Feed</a><a class="px-space-sm py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-label-md text-label-md uppercase tracking-wider rounded-lg" data-path="rx-forum" href="#">Rx Forum</a><a class="px-space-sm py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-label-md text-label-md uppercase tracking-wider rounded-lg" data-path="conferences-and-live" href="#">Conferences</a><a class="px-space-sm py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-label-md text-label-md uppercase tracking-wider rounded-lg" data-path="network-and-directory" href="#">Directory</a><a class="px-space-sm py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-label-md text-label-md uppercase tracking-wider rounded-lg" data-path="messages" href="#">Messages</a><a class="relative px-space-sm py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-label-md text-label-md uppercase tracking-wider rounded-lg flex items-center gap-space-xxs" data-path="statutory-notices" href="#"><span>Notices</span><span class="font-label-sm text-label-sm bg-error-container text-on-error-container px-space-xxs py-[1px] rounded-lg tracking-normal font-bold">1 Recall</span></a></nav><div class="flex items-center gap-space-sm flex-shrink-0"><button class="hidden xl:inline-flex items-center gap-space-xs px-space-md py-space-xs bg-secondary text-on-secondary font-label-md text-label-md rounded-lg shadow-[0_1px_4px_rgba(0,106,97,0.25)] hover:bg-secondary/90 transition-all"><span class="material-symbols-outlined text-[16px]">add</span><span>Start Discussion</span></button><button class="relative p-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-error ring-2 ring-surface-container-lowest"></span></button><div class="flex items-center gap-space-xs pl-space-xs border-l border-outline-variant/30"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="hidden 2xl:flex flex-col text-left leading-tight"><span class="font-label-sm text-label-sm text-on-surface font-bold truncate max-w-[140px]">Pharm. Kofi Boateng</span><span class="font-label-sm text-label-sm text-secondary font-medium truncate max-w-[140px]">Council Verified</span></div></div></div></div></header><main class="w-full pt-16 bg-surface min-h-[calc(100vh-4rem)]"><div class="flex flex-col w-full">
+<div class="max-w-7xl mx-auto w-full px-margin-mobile md:px-margin-tablet lg:px-margin-desktop py-space-lg">
+<!-- 3-Column Professional Desktop Workspace Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-desktop items-start">
+<!-- ================= LEFT COLUMN: Practitioner Dossier & Institutional Shortcuts ================= -->
+<aside class="lg:col-span-3 flex flex-col gap-space-md">
+<!-- Profile Anchor Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
+<!-- Institutional Header Graphic -->
+<div class="relative h-20 bg-gradient-to-r from-primary-container via-primary to-primary-container">
+<div class="absolute inset-0 opacity-15 bg-[radial-gradient(#86f2e4_1px,transparent_1px)] [background-size:12px_12px]"></div>
+<div class="absolute top-2 right-2 px-space-xs py-[2px] bg-primary/40 backdrop-blur-sm rounded text-inverse-on-surface font-code-mono text-label-sm tracking-wide">
+              PCG SECURE ID
+            </div>
+</div>
+<!-- Avatar & Primary Clinical Identifiers -->
+<div class="px-space-md pb-space-md pt-0 flex flex-col relative">
+<div class="-mt-10 mb-space-sm flex items-end justify-between">
+<div class="relative w-16 h-16 rounded-xl bg-surface-container-lowest p-1 shadow-md">
+<img class="w-full h-full object-cover rounded-lg" data-alt="Dignified portrait of Dr Kofi Boateng Mensah, a senior Ghanaian superintendent clinical pharmacist in formal navy suit and clinical white coat, smiling warmly with modern hospital pharmacy backdrop, soft clinical daylight, corporate editorial look" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5oKJHaQ-sM8rAG3TW4RhR9Amt-fwZb7l0YuBuHpaAPP8EQM3BsR6sAL4jSnoKi-x2OOgYpjnKYczU_a5F2YGqdiE0HX35wM4-eNxiVF6ocBMa7S-pErGTUNSE3HftXi69GriUUgxIMPazE05__qq3Ax-Ml4nA5MzY1BLzwcDOGVp_5QSK9WAkTxYcHvihypR23IDmM_qU6NDrMgRd7YwB-saifn0EPoc0HwQzSBs70BFLtwjKqBZf-w"/>
+<span class="absolute bottom-1 right-1 w-3.5 h-3.5 bg-secondary rounded-full ring-2 ring-surface-container-lowest" title="Active on Statutory Network"></span>
+</div>
+<span class="inline-flex items-center gap-1 px-space-xs py-[2px] rounded bg-secondary-container/40 text-on-secondary-container font-label-sm text-label-sm font-bold tracking-tight">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+                Verified Fellow
+              </span>
+</div>
+<div class="flex flex-col">
+<h2 class="font-headline-sm text-headline-sm text-on-surface leading-tight">Dr. Kofi Boateng Mensah</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant font-medium mt-0.5">Superintendent Pharmacist</p>
+<p class="font-body-sm text-body-sm text-outline mt-space-xxs flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">local_hospital</span>
+                Korle Bu Teaching Hospital
+              </p>
+<div class="mt-space-xs pt-space-xs flex items-center justify-between text-outline">
+<span class="font-code-mono text-label-sm text-on-surface-variant bg-surface-container-low px-1.5 py-0.5 rounded font-semibold">
+                  PCG-R-08492
+                </span>
+<span class="font-label-sm text-label-sm text-secondary font-bold">Gazetted 2014</span>
+</div>
+</div>
+<!-- Professional Metric Tiles -->
+<div class="mt-space-md pt-space-md bg-surface-container-low rounded-lg p-space-sm flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Peer Network</span>
+<span class="font-code-mono text-body-sm text-primary-container font-bold">1,420</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Clinical Consults</span>
+<span class="font-code-mono text-body-sm text-primary-container font-bold">38</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Annual CPD Target</span>
+<span class="font-code-mono text-label-md text-secondary font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                  24 / 20 Pts
+                </span>
+</div>
+</div>
+<div class="mt-space-sm flex items-center justify-between px-space-xxs">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">License Status</span>
+<span class="font-label-sm text-label-sm text-secondary font-bold uppercase bg-secondary-container/30 px-2 py-0.5 rounded">Current • Active</span>
+</div>
+</div>
+</div>
+<!-- Institutional Shortcuts Card -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between pb-space-xs">
+<h3 class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant font-bold">Guilds &amp; Directives</h3>
+<span class="material-symbols-outlined text-outline text-[16px]">tune</span>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="group flex items-center gap-space-xs px-space-xs py-space-xs rounded-lg hover:bg-surface-container transition-colors" href="#">
+<span class="w-6 h-6 rounded bg-primary-container text-on-primary flex items-center justify-center font-code-mono text-label-sm font-bold flex-shrink-0">KB</span>
+<span class="font-body-sm text-body-sm text-on-surface font-medium truncate group-hover:text-primary-container">My Hospital Pharmacy Group</span>
+</a>
+<a class="group flex items-center gap-space-xs px-space-xs py-space-xs rounded-lg hover:bg-surface-container transition-colors" href="#">
+<span class="w-6 h-6 rounded bg-secondary text-on-secondary flex items-center justify-center font-code-mono text-label-sm font-bold flex-shrink-0">GC</span>
+<span class="font-body-sm text-body-sm text-on-surface font-medium truncate group-hover:text-secondary">Ghana Clinical Pharmacists Guild</span>
+</a>
+<a class="group flex items-center gap-space-xs px-space-xs py-space-xs rounded-lg hover:bg-surface-container transition-colors" href="#">
+<span class="w-6 h-6 rounded bg-surface-container-high text-primary flex items-center justify-center font-code-mono text-label-sm font-bold flex-shrink-0">AS</span>
+<span class="font-body-sm text-body-sm text-on-surface font-medium truncate group-hover:text-primary">Antimicrobial Stewardship Net</span>
+</a>
+<a class="group flex items-center gap-space-xs px-space-xs py-space-xs rounded-lg hover:bg-surface-container transition-colors" href="#">
+<span class="w-6 h-6 rounded bg-surface-container-high text-primary flex items-center justify-center font-code-mono text-label-sm font-bold flex-shrink-0">PS</span>
+<span class="font-body-sm text-body-sm text-on-surface font-medium truncate group-hover:text-primary">Pharmacy Students Union (KNUST/UG)</span>
+</a>
+</nav>
+</div>
+<!-- Upcoming Statutory Calendar Widget -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-xs">
+<div class="flex items-center gap-1.5 text-secondary font-label-sm text-label-sm uppercase tracking-wider font-bold">
+<span class="material-symbols-outlined text-[16px]">event_upcoming</span>
+            Accredited Webinar
+          </div>
+<p class="font-headline-sm text-headline-sm text-on-surface leading-snug mt-1">
+            National Malaria Prophylaxis Guidelines Revision 2026
+          </p>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[15px] text-outline">schedule</span>
+            Tomorrow • 2:00 PM GMT
+          </p>
+<div class="mt-space-xs pt-space-xs flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-outline font-medium">+2.0 Accredited CPD</span>
+<button class="font-label-sm text-label-sm font-bold text-secondary hover:text-on-secondary-container hover:underline transition-all">
+              Add to Diary →
+            </button>
+</div>
+</div>
+</aside>
+<!-- ================= CENTER COLUMN: Publisher, Council Notice & Statutory Feeds ================= -->
+<section class="lg:col-span-6 flex flex-col gap-space-md">
+<!-- Clinical Publisher Box -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Circular headshot photo portrait of Ghanaian pharmacist Dr Kofi Boateng Mensah looking confident and friendly in clinical work setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD9UL96MSrI7MKSlpLzfebKo4Au84KBGJRKhLPK1mlxp48Fhv2M3Dy3l4Ky5qzdf2nZNG03ELXhV3nCTi-beuvs7L1-fpSX8_q_-5_EzgoGdAphjRWnEO4Kh-7NhsvZ9V0tIV_m2lXr6-OiwGeRICnjiZULBfcya2Bg1ygyYn45dzK2K7BEBRGXfT3zb-4QI9Llb6EJeD5NV3g_5Iyh_BpfQa6wn6X1M_95gOqAAf2OoD2PE7Z9H-PdSw"/>
+</div>
+<button class="w-full text-left bg-surface-container-low hover:bg-surface-container px-space-md py-2.5 rounded-full font-body-sm text-body-sm text-on-surface-variant transition-colors flex items-center justify-between">
+<span>Share a clinical update, drug alert, or start a peer consult...</span>
+<span class="material-symbols-outlined text-outline text-[18px]">edit_note</span>
+</button>
+</div>
+<div class="flex items-center justify-between pt-space-xs overflow-x-auto gap-space-xs">
+<button class="inline-flex items-center gap-1.5 px-space-sm py-1.5 rounded-lg hover:bg-surface-container font-label-md text-label-md text-on-surface-variant transition-colors whitespace-nowrap">
+<span class="material-symbols-outlined text-secondary text-[18px]">image</span>
+              Media / Specimen
+            </button>
+<button class="inline-flex items-center gap-1.5 px-space-sm py-1.5 rounded-lg hover:bg-surface-container font-label-md text-label-md text-on-surface-variant transition-colors whitespace-nowrap">
+<span class="material-symbols-outlined text-primary-container text-[18px]">poll</span>
+              Clinical Poll / Case
+            </button>
+<button class="inline-flex items-center gap-1.5 px-space-sm py-1.5 rounded-lg hover:bg-surface-container font-label-md text-label-md text-on-surface-variant transition-colors whitespace-nowrap">
+<span class="material-symbols-outlined text-on-tertiary-container text-[18px]">video_camera_front</span>
+              Host Live Stage
+            </button>
+<button class="inline-flex items-center gap-1.5 px-space-sm py-1.5 rounded-lg hover:bg-surface-container font-label-md text-label-md text-on-surface-variant transition-colors whitespace-nowrap">
+<span class="material-symbols-outlined text-outline text-[18px]">campaign</span>
+              Gazette Notice
+            </button>
+</div>
+</div>
+<!-- Statutory Council Urgent Recall Directive (Sticky Highlight) -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm flex flex-col">
+<!-- Mandatory Council Alert Header -->
+<div class="bg-error-container/60 px-space-md py-space-xs flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-error text-[18px]" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="font-label-sm text-label-sm font-bold text-on-error-container uppercase tracking-wider">
+                Pharmacy Council of Ghana • Official Urgent Directive
+              </span>
+</div>
+<span class="font-code-mono text-label-sm text-error font-bold">SEC. 118 STATUTORY</span>
+</div>
+<div class="p-space-md flex flex-col gap-space-xs">
+<div class="flex items-start justify-between gap-space-sm">
+<div>
+<span class="inline-block font-label-sm text-label-sm bg-error text-on-error px-2 py-0.5 rounded font-bold uppercase tracking-wider mb-1">
+                  Class I Drug Recall #2026-0089
+                </span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold leading-tight">
+                  Immediate Quarantine: Falsified Artemether-Lumefantrine Oral Suspensions (Batch #AL-9942)
+                </h3>
+</div>
+<span class="font-code-mono text-label-sm text-outline whitespace-nowrap">14 mins ago</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+              Laboratory assay tests conducted by the National Quality Control Laboratory confirm sub-potent active pharmaceutical ingredients (API &lt; 14.2%) and microbial contamination in batch <strong class="text-on-surface">#AL-9942</strong> (Exp: 11/2027, labeled manufacturer: Tropic Cure Pharm). All superintendent pharmacists must seal, quarantine, and submit physical counts.
+            </p>
+<div class="flex flex-wrap items-center gap-space-xs mt-1">
+<span class="font-label-sm text-label-sm text-error bg-error-container/30 px-2 py-0.5 rounded font-semibold">#DrugRecall</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-low px-2 py-0.5 rounded font-medium">#Antimalarials</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-low px-2 py-0.5 rounded font-medium">#PediatricSafety</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-low px-2 py-0.5 rounded font-medium">#GhanaFDAAlerts</span>
+</div>
+<!-- Audit Acknowledgement Bar -->
+<div class="mt-space-sm p-space-sm bg-surface-container-low rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-sm">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-secondary text-[16px]">verified</span>
+                  4,280 / 4,890 Verified Outlets Acknowledged
+                </span>
+<div class="w-48 bg-surface-container h-1.5 rounded-full overflow-hidden mt-1">
+<div class="bg-secondary h-full rounded-full" style="width: 87.5%"></div>
+</div>
+</div>
+<button class="px-space-md py-1.5 bg-error text-on-error hover:bg-error/90 font-label-sm text-label-sm uppercase font-bold rounded-lg shadow-sm transition-all flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+                Acknowledge &amp; Sign Receipt
+              </button>
+</div>
+</div>
+</div>
+<!-- Social Feed Post 1: Collaborative Clinical Case Study -->
+<article class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-sm">
+<!-- Post Author Header -->
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-xl overflow-hidden bg-surface-container-high flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Editorial portrait of Ghanaian female hospital pharmacist Pharm Abena Osei-Tutu wearing teal stethoscope and lab coat in hospital clinical ward" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtBJ9PpRAmLWG_zNNQi7Wa47VBYbDSvKx-wInHmcwLEIaW_EixVOK9-hweW9HeonIlKc49oIAbtWioiZPxO6rxS0QRTtEYpAnC0z2Xd5MslmXKRkAkUA0KP95LmL7NIuR6zGk4v8OyuP0v3s-9WFvmGQYhxnyIGXM3Jn516C0D7x6iSK74gN7koAmqe8BvKRugmo3A3jJyB5W9sB6kVWJQhAD3XJv1cr5HexPreVtAz5YfL6OsyUH0sg"/>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Pharm. Abena Osei-Tutu</span>
+<span class="material-symbols-outlined text-secondary text-[16px]" style="font-variation-settings: 'FILL' 1;" title="Council Board Certified">verified</span>
+<span class="font-label-sm text-label-sm bg-surface-container text-on-surface-variant px-1.5 py-0.5 rounded font-semibold">Specialist Preceptor</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Lead Clinical Pharmacist • Ridge Regional Hospital</p>
+<p class="font-code-mono text-label-sm text-outline flex items-center gap-1">
+<span>2 hours ago</span>
+<span>•</span>
+<span class="material-symbols-outlined text-[12px]">public</span>
+<span>Accredited Peer Network</span>
+</p>
+</div>
+</div>
+<button class="text-outline hover:text-on-surface p-1 rounded">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+</div>
+<!-- Clinical Case Body -->
+<div class="flex flex-col gap-space-xs">
+<p class="font-body-md text-body-md text-on-surface leading-relaxed">
+              Observing notable resistance trends to standard empiric third-generation cephalosporin regimens in pediatric post-op wards across Greater Accra. Initiating a multi-center culture review with clinical microbiologists. Colleagues at Komfo Anokye (KATH) and Tamale Teaching: are you tracking similar isolates in your local antibiograms?
+            </p>
+</div>
+<!-- Interactive Clinical Data Artifact Preview -->
+<div class="bg-surface-container-low rounded-xl p-space-md flex flex-col gap-space-sm overflow-hidden">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary-container text-[18px]">biotech</span>
+<span class="font-label-md text-label-md font-bold text-primary-container uppercase tracking-wide">
+                  Antibiogram Sensitivity Matrix (Q1 2026 Preliminary)
+                </span>
+</div>
+<span class="font-label-sm text-label-sm bg-surface-container-highest text-on-surface px-2 py-0.5 rounded font-medium">
+                4 participating tertiary hospitals
+              </span>
+</div>
+<!-- Inline Comparative SVG Data Visualization -->
+<div class="w-full bg-surface-container-lowest p-space-sm rounded-lg">
+<div class="grid grid-cols-4 text-center font-label-sm text-label-sm text-outline uppercase tracking-wider pb-1 border-b border-surface-container">
+<span class="text-left">Isolate / Agent</span>
+<span>Cefotaxime</span>
+<span>Ceftriaxone</span>
+<span>Meropenem</span>
+</div>
+<div class="grid grid-cols-4 items-center py-2 font-body-sm text-body-sm">
+<span class="font-bold text-on-surface text-left">K. pneumoniae (n=84)</span>
+<span class="font-code-mono text-error font-bold bg-error-container/40 rounded py-0.5">38% Susc.</span>
+<span class="font-code-mono text-error font-bold bg-error-container/40 rounded py-0.5">41% Susc.</span>
+<span class="font-code-mono text-secondary font-bold bg-secondary-container/40 rounded py-0.5">94% Susc.</span>
+</div>
+<div class="grid grid-cols-4 items-center py-2 font-body-sm text-body-sm">
+<span class="font-bold text-on-surface text-left">E. coli (Post-op n=112)</span>
+<span class="font-code-mono text-error font-bold bg-error-container/40 rounded py-0.5">44% Susc.</span>
+<span class="font-code-mono text-error font-bold bg-error-container/40 rounded py-0.5">48% Susc.</span>
+<span class="font-code-mono text-secondary font-bold bg-secondary-container/40 rounded py-0.5">98% Susc.</span>
+</div>
+</div>
+<!-- Live Collaboration Trigger -->
+<div class="bg-primary-container text-on-primary p-space-sm rounded-lg flex items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="w-2.5 h-2.5 rounded-full bg-error animate-ping"></span>
+<span class="font-body-sm text-body-sm font-semibold">Live Case Huddle in progress in Rx Room #4</span>
+<span class="font-label-sm text-label-sm text-on-primary-container">(18 pharmacists in session)</span>
+</div>
+<button class="px-space-sm py-1 bg-secondary text-on-secondary font-label-sm text-label-sm rounded font-bold hover:bg-secondary/90 transition-all flex items-center gap-1 whitespace-nowrap">
+<span class="material-symbols-outlined text-[16px]">headset_mic</span>
+                Join Audio Huddle
+              </button>
+</div>
+</div>
+<!-- Interaction Counts & Metric Summary -->
+<div class="flex items-center justify-between text-outline font-body-sm text-body-sm px-space-xxs pt-space-xs">
+<span class="flex items-center gap-1 hover:underline cursor-pointer">
+<span class="material-symbols-outlined text-secondary text-[16px]">thumb_up</span>
+              84 Endorsements • 14 Prescribers
+            </span>
+<span class="hover:underline cursor-pointer">32 Clinical Insights • 9 Hospital Reposts</span>
+</div>
+<!-- Interaction Action Bar -->
+<div class="flex items-center justify-between pt-space-xs border-t border-surface-container-low text-on-surface-variant font-label-md text-label-md">
+<button class="flex items-center gap-1.5 px-space-xs py-1.5 rounded-lg hover:bg-surface-container hover:text-secondary transition-colors">
+<span class="material-symbols-outlined text-[18px]">thumb_up</span>
+<span>Endorse</span>
+</button>
+<button class="flex items-center gap-1.5 px-space-xs py-1.5 rounded-lg hover:bg-surface-container hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">comment</span>
+<span>Insights</span>
+</button>
+<button class="flex items-center gap-1.5 px-space-xs py-1.5 rounded-lg hover:bg-surface-container hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">cycle</span>
+<span>Share to Team</span>
+</button>
+<button class="flex items-center gap-1.5 px-space-xs py-1.5 rounded-lg hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[18px]">bookmark</span>
+<span>Save Case</span>
+</button>
+</div>
+<!-- Pinned Institutional Peer Comment -->
+<div class="bg-surface-container-low p-space-sm rounded-lg flex items-start gap-space-sm mt-space-xs">
+<div class="w-8 h-8 rounded-lg overflow-hidden bg-primary-container flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Corporate headshot of Dr Kwame Mensah, Ghanaian senior regulatory health director in spectacles and dark charcoal suit with council crest lapel pin" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFCd6CNZrNtaNqMFxBd1oUu86J9ddF8mlciPsAF6Lihkpo-NPGt42weO4-xoMHxK36zXrHLbOM6bBIQpSvcwMY0CtyfGcRnrGEfPrpDb5DL8Yv9ryuMNMi05JbDq2kXaGBUUnfT0XVb9ulg3fXSlJqH5KQ7PU0jODa8B20pIU5-S85XQxsaOW3iAY_aOh9wIG4EbSQpALNGvMbvYIWvIa1LBHGdH0x38FCxmk16ZRBdz0k3KxMBk1xww"/>
+</div>
+<div class="flex flex-col flex-1">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1">
+<span class="font-label-md text-label-md font-bold text-on-surface">Dr. Kwame Mensah</span>
+<span class="font-label-sm text-label-sm bg-primary-container text-on-primary px-1.5 py-[1px] rounded font-semibold">Deputy Registrar, PCG</span>
+</div>
+<span class="font-code-mono text-label-sm text-outline">1h ago</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                The Council recommends logging confirmed ESBL culture receipts via the national AMR surveillance portal. Regional alerts can be dispatched via the Board once Tamale and KATH corroborate their antibiogram differentials.
+              </p>
+</div>
+</div>
+</article>
+<!-- Social Feed Post 2: Grand Round Peer Announcement -->
+<article class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-xl bg-surface-variant flex items-center justify-center text-primary-container font-headline-sm text-headline-sm font-bold flex-shrink-0">
+                YPG
+              </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Ghana Young Pharmacists Group</span>
+<span class="material-symbols-outlined text-secondary text-[16px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Affiliated with Pharmaceutical Society of Ghana (PSGH)</p>
+<p class="font-code-mono text-label-sm text-outline flex items-center gap-1">
+<span>5 hours ago</span>
+<span>•</span>
+<span class="material-symbols-outlined text-[12px]">event</span>
+<span>Grand Round Series</span>
+</p>
+</div>
+</div>
+<button class="text-outline hover:text-on-surface p-1 rounded">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+</div>
+<p class="font-body-md text-body-md text-on-surface leading-relaxed">
+            Join our weekly Live CPD Grand Round this Friday: <strong class="text-on-surface">"Navigating Cold Chain Logistics for Biologics in High Ambient Temperatures"</strong>. Special focus on monoclonal antibodies and insulin stability across primary health hubs. Keynote delivered by Pharm. Emmanuel K. Adjei.
+          </p>
+<!-- Interactive Event Promotion Visual Card -->
+<div class="rounded-xl overflow-hidden bg-primary-container text-on-primary flex flex-col md:flex-row">
+<div class="md:w-5/12 h-44 md:h-auto relative">
+<img class="w-full h-full object-cover" data-alt="Modern clinical pharmaceutical logistics facility showing temperature controlled biologic transport boxes, automated sensors, cold chain monitors, blue clinical lighting, Ghana healthcare supply chain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuChSj-KMcVpDTJFjOEJSRbXkY9TIrLrXXZfGoiiBjODbtAeuBAoxJBYkFIdAr0k8OM7h6pSJXSC42Vt8lNXLadZuLrrwrBeo0fI-u6XnlkuzkUPKWqD_HS02VUcz0Y0UkW3MxvE5dpyzwf6TCgxoMWn1qiAvj6CRpQTyh9zuDOm1bJziPOpW1OEFlH0bHFtqIxeCZn46dJNcF7WYsaVuPbxFEZzZqpvQfFyBG_Ah-o51wtm7F1uC-9C8g"/>
+<div class="absolute top-2 left-2 px-2 py-1 rounded bg-primary/80 backdrop-blur-sm text-on-primary font-code-mono text-label-sm">
+                LIVE STAGE ACCREDITED
+              </div>
+</div>
+<div class="p-space-md flex flex-col justify-between flex-1 gap-space-sm">
+<div class="flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-secondary-container font-bold uppercase tracking-wider">CPD Module 04-B</span>
+<h4 class="font-headline-sm text-headline-sm text-on-primary font-bold">Biologics Integrity &amp; Cold Chain Architecture</h4>
+<p class="font-body-sm text-body-sm text-on-primary-container">Friday, March 6 • 6:00 PM - 7:30 PM GMT</p>
+</div>
+<div class="flex items-center gap-space-xs pt-space-xs">
+<button class="px-space-md py-2 bg-secondary text-on-secondary rounded-lg font-label-md text-label-md font-bold hover:bg-secondary/90 transition-all flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[16px]">bookmark_add</span>
+                  RSVP &amp; Add to CPD
+                </button>
+<button class="px-space-sm py-2 bg-surface-container-highest/20 hover:bg-surface-container-highest/30 text-on-primary rounded-lg font-label-md text-label-md transition-all">
+                  Speaker Profile
+                </button>
+</div>
+</div>
+</div>
+<!-- Interaction Footer -->
+<div class="flex items-center justify-between pt-space-xs text-outline font-label-md text-label-md">
+<span class="font-body-sm text-body-sm">164 Pharmacists attending • 42 Comments</span>
+<div class="flex items-center gap-space-xs">
+<button class="hover:text-on-surface transition-colors p-1"><span class="material-symbols-outlined text-[18px]">share</span></button>
+<button class="hover:text-on-surface transition-colors p-1"><span class="material-symbols-outlined text-[18px]">forward</span></button>
+</div>
+</div>
+</article>
+</section>
+<!-- ================= RIGHT COLUMN: Live Conferences, Trends & Verified Directory ================= -->
+<aside class="lg:col-span-3 flex flex-col gap-space-md">
+<!-- Live Video Conferences Card -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-error animate-ping"></span>
+<h3 class="font-label-md text-label-md uppercase tracking-wider text-on-surface font-bold">Live Rx Stages</h3>
+</div>
+<span class="font-label-sm text-label-sm text-secondary font-bold">4 Active</span>
+</div>
+<!-- Stage 1 -->
+<div class="p-space-sm bg-surface-container-low rounded-lg flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-error bg-error-container/40 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                Live Now
+              </span>
+<span class="font-code-mono text-label-sm text-outline">24 clinicians</span>
+</div>
+<h4 class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight">
+              Pediatric Dosing Discrepancies Huddle
+            </h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Host: Korle Bu Neonatal Pharmacy Unit</p>
+<button class="mt-1 w-full py-1.5 bg-primary-container text-on-primary hover:bg-primary-container/90 rounded font-label-sm text-label-sm font-bold transition-all flex items-center justify-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[16px]">videocam</span>
+              Join Video Room
+            </button>
+</div>
+<!-- Stage 2 -->
+<div class="p-space-sm bg-surface-container-low rounded-lg flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-highest px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">
+                In 45 mins
+              </span>
+<span class="font-code-mono text-label-sm text-outline">112 RSVP'd</span>
+</div>
+<h4 class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight">
+              Community Pharmacy Antimicrobial Audits
+            </h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Moderated by Dr. Eric N. Darko</p>
+<button class="mt-1 w-full py-1.5 bg-surface-container-highest hover:bg-surface-container text-on-surface rounded font-label-sm text-label-sm font-semibold transition-all">
+              Remind Me
+            </button>
+</div>
+</div>
+<!-- Trending Statutory & Clinical Topics -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<h3 class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant font-bold">Trending Clinical Topics</h3>
+<span class="material-symbols-outlined text-outline text-[16px]">trending_up</span>
+</div>
+<div class="flex flex-col gap-space-xs">
+<a class="group flex flex-col p-1.5 rounded-lg hover:bg-surface-container transition-colors" href="#">
+<span class="font-headline-sm text-headline-sm text-on-surface group-hover:text-secondary transition-colors">#AntimicrobialResistance</span>
+<span class="font-body-sm text-body-sm text-outline">482 case references this week</span>
+</a>
+<a class="group flex flex-col p-1.5 rounded-lg hover:bg-surface-container transition-colors" href="#">
+<span class="font-headline-sm text-headline-sm text-on-surface group-hover:text-secondary transition-colors">#GhanaFDAAlerts</span>
+<span class="font-body-sm text-body-sm text-outline">Official notices • 1,290 verified readers</span>
+</a>
+<a class="group flex flex-col p-1.5 rounded-lg hover:bg-surface-container transition-colors" href="#">
+<span class="font-headline-sm text-headline-sm text-on-surface group-hover:text-secondary transition-colors">#CPDCredits2026</span>
+<span class="font-body-sm text-body-sm text-outline">Mandatory renewal deadline in 28 days</span>
+</a>
+<a class="group flex flex-col p-1.5 rounded-lg hover:bg-surface-container transition-colors" href="#">
+<span class="font-headline-sm text-headline-sm text-on-surface group-hover:text-secondary transition-colors">#NHISFormulary</span>
+<span class="font-body-sm text-body-sm text-outline">Tariff review debates • 89 discussions</span>
+</a>
+</div>
+</div>
+<!-- Verified Peers You May Know -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<h3 class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant font-bold">Verified Colleagues</h3>
+<a class="font-label-sm text-label-sm text-secondary font-bold hover:underline" href="#">All →</a>
+</div>
+<div class="flex flex-col gap-space-sm">
+<!-- Peer 1 -->
+<div class="flex items-center justify-between gap-space-xs">
+<div class="flex items-center gap-space-xs">
+<div class="w-9 h-9 rounded-lg overflow-hidden bg-surface-variant flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Square portrait of Ghanaian female regulatory pharmacist Pharm Grace Addo wearing spectacles with professional clinical office background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCluH9XTHxAkAgHxctgL4RgCBpLpdrNyOJytxoWN9YP3NsfdzuTMY0OU-dufN3z9IKj2_Le38gY5U-o6Fa8Hd3EgRbn3Qwm6lDc_4pkh6Agv5LqBavLlhwpyTt5nE5NWVIRwjKUxblOyHy_sAj1eQoiwRHfQlXFZ9euklQLD7fp3bBBERZ6gFHXjw-9G0N2Ww066MD-NjiVdi_vs0AgkRofs6k8qhQRBqsT57fpO2_otAS_4zZ2S11cLQ"/>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1">
+<span class="font-label-md text-label-md font-bold text-on-surface truncate">Pharm. Grace Addo</span>
+<span class="material-symbols-outlined text-secondary text-[14px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<span class="font-body-sm text-body-sm text-outline truncate">Chief Inspector, FDA Tema</span>
+</div>
+</div>
+<button class="px-space-xs py-1 rounded bg-surface-container hover:bg-secondary hover:text-on-secondary text-primary-container font-label-sm text-label-sm font-bold transition-all whitespace-nowrap">
+                + Connect
+              </button>
+</div>
+<!-- Peer 2 -->
+<div class="flex items-center justify-between gap-space-xs">
+<div class="flex items-center gap-space-xs">
+<div class="w-9 h-9 rounded-lg overflow-hidden bg-surface-variant flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Square portrait of senior Ghanaian hospital pharmacist Dr Samuel Donkor in hospital dispensary wearing white pharmacist coat and badge" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkhWBoMf0BdsEQ0TLkIS8fnS8WYkiUCGGjgoBsGgd4Xl_NxXpXEEuJG39SYiDjfZf6GsRGvqzmWJW_1P-auL901wM2HyxeYGuGBhPWNty8Xp2nkE5IkK2s6WzGflOlaSLrIJnKnp-UZRj5H4t3k5hlZygC_0oG3lmHf90doJs0VKN-BEHvbWHfU3Dmb5H5LGM0KnpvWIWpYqNgRjcDJannCic_h9OnfMov5hxTeJ50Z5vhrcfEa2DswQ"/>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1">
+<span class="font-label-md text-label-md font-bold text-on-surface truncate">Dr. Samuel Donkor</span>
+<span class="material-symbols-outlined text-secondary text-[14px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<span class="font-body-sm text-body-sm text-outline truncate">Clinical Preceptor, KATH</span>
+</div>
+</div>
+<button class="px-space-xs py-1 rounded bg-surface-container hover:bg-secondary hover:text-on-secondary text-primary-container font-label-sm text-label-sm font-bold transition-all whitespace-nowrap">
+                + Connect
+              </button>
+</div>
+</div>
+</div>
+<!-- Statutory Compliance Footer Pill -->
+<div class="p-space-sm bg-surface-container-low rounded-xl flex items-center justify-between text-outline text-label-sm">
+<span>Encrypted under Act 857</span>
+<span class="font-code-mono">TLS 1.3 / PCG-Node #12</span>
+</div>
+</aside>
+</div>
+</div>
+</div></main><footer class="w-full bg-surface-container-lowest shadow-[0_-1px_8px_rgba(0,0,0,0.03)] py-space-xl mt-space-2xl"><div class="max-w-7xl mx-auto px-margin-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-sm"><span class="font-label-md text-label-md text-primary-container uppercase font-bold tracking-wider">PharmaBoard Statutory Network</span><span>•</span><span class="font-label-sm text-label-sm text-secondary font-semibold">Accredited by National Pharmacy Council</span></div><div class="flex items-center gap-space-lg font-label-sm text-label-sm uppercase tracking-wider"><a class="hover:text-on-surface transition-colors" href="#">Gazette Archive</a><a class="hover:text-on-surface transition-colors" href="#">Council Bylaws</a><a class="hover:text-on-surface transition-colors" href="#">Pharmacovigilance Helpdesk</a><a class="hover:text-on-surface transition-colors" href="#">Ethics &amp; Conduct</a></div><div class="font-label-sm text-label-sm text-outline">© 2025 PharmaBoard Statutory Health Network. All rights reserved.</div></div></footer></body></html>

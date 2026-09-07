@@ -1,135 +1,154 @@
-import { type ReactNode, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { type ReactNode, useState, type FormEvent } from "react";
+import { NavLink, useNavigate, Link } from "react-router-dom";
 import clsx from "clsx";
+import { Search, LogOut } from "lucide-react";
 import { useAuth } from "@/features/auth/AuthContext";
 import { Avatar } from "@/components/ui/Avatar";
-import { VerificationMark } from "@/components/ui/Badge";
 
-// Navigation is typographic, not iconographic. An institution's index reads
-// as a list of sections, not a toolbar.
-const sections = [
-  {
-    label: "Notices",
-    items: [
-      { to: "/notices", label: "Register of notices", end: true },
-      { to: "/notices/compose", label: "Compose", end: false },
-    ],
-  },
-  {
-    label: "Direct",
-    items: [{ to: "/messaging", label: "Messages", end: false }],
-  },
-  {
-    label: "Administration",
-    items: [{ to: "/admin", label: "Roles & audit", end: false }],
-  },
+// A horizontal top nav, not a vertical icon rail — a prior pass tried a
+// persistent left sidebar modelled too literally on a reference product;
+// walked back after feedback to remove the vertical tabs.
+const navItems = [
+  { to: "/home", label: "Feed", end: true },
+  { to: "/forum", label: "Rx Forum", end: false },
+  { to: "/network", label: "Directory", end: false },
+  { to: "/messaging", label: "Messages", end: false },
+  { to: "/notices", label: "Notices", end: true },
+  { to: "/admin", label: "Admin", end: false },
 ];
 
-function CopyableId({ id }: { id: string }) {
-  const [copied, setCopied] = useState(false);
+function TopBar() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [query, setQuery] = useState("");
 
-  async function copy() {
-    await navigator.clipboard.writeText(id);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+  function onSearch(e: FormEvent) {
+    e.preventDefault();
+    navigate(`/network?q=${encodeURIComponent(query)}`);
   }
 
   return (
-    <button
-      onClick={copy}
-      title="Copy your user ID — share it with a colleague so they can start a conversation with you"
-      className="mt-2 block w-full text-left font-mono text-[0.625rem] leading-relaxed text-ink-faint transition-colors hover:text-ink-muted"
-    >
-      {copied ? "Copied to clipboard" : id}
-    </button>
-  );
-}
+    <header className="sticky top-0 z-40 border-b border-hairline bg-surface">
+      <div className="mx-auto flex h-16 max-w-app items-center gap-5 px-4 lg:px-6">
+        <Link to="/home" className="shrink-0 text-[0.9375rem] font-bold text-ink">
+          Pharma<span className="text-accent-600">Board</span>
+        </Link>
 
-export function AppShell({
-  title,
-  kicker,
-  actions,
-  children,
-}: {
-  title: string;
-  kicker?: string;
-  actions?: ReactNode;
-  children: ReactNode;
-}) {
-  const { user, logout } = useAuth();
-
-  return (
-    <div className="min-h-screen bg-paper">
-      <aside className="fixed inset-y-0 left-0 flex w-64 flex-col border-r border-rule bg-paper px-7 py-8">
-        {/* Masthead */}
-        <div className="border-b-2 border-ink pb-4">
-          <p className="font-display text-[1.5rem] font-semibold leading-none tracking-tight text-ink">
-            PharmaBoard
-          </p>
-          <p className="label-caps mt-2 text-ink-faint">Pharmacy Notices · Ghana</p>
-        </div>
-
-        <nav className="mt-8 flex-1 space-y-7">
-          {sections.map((section) => (
-            <div key={section.label}>
-              <p className="label-caps mb-2.5 text-ink-faint">{section.label}</p>
-              <ul className="space-y-1.5">
-                {section.items.map((item) => (
-                  <li key={item.to}>
-                    <NavLink
-                      to={item.to}
-                      end={item.end}
-                      className={({ isActive }) =>
-                        clsx(
-                          "-ml-3 block border-l-2 py-0.5 pl-3 font-sans text-[0.8125rem] transition-colors",
-                          isActive
-                            ? "border-ink font-medium text-ink"
-                            : "border-transparent text-ink-muted hover:text-ink",
-                        )
-                      }
-                    >
-                      {item.label}
-                    </NavLink>
-                  </li>
-                ))}
-              </ul>
-            </div>
+        <nav className="hidden items-center gap-1 md:flex">
+          {navItems.map(({ to, label, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) =>
+                clsx(
+                  "rounded-full px-3 py-1.5 text-[0.8125rem] font-medium transition-colors",
+                  isActive
+                    ? "bg-accent-50 text-accent-700"
+                    : "text-muted hover:bg-hairline/50 hover:text-ink",
+                )
+              }
+            >
+              {label}
+            </NavLink>
           ))}
         </nav>
 
+        <form onSubmit={onSearch} className="relative ml-auto hidden max-w-[13rem] flex-1 lg:block">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-faint" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search colleagues"
+            className="w-full rounded-full border border-hairline bg-canvas py-1.5 pl-8 pr-3 text-[0.8125rem] text-ink transition-colors placeholder:text-faint focus-visible:border-accent-600 focus-visible:outline-none"
+          />
+        </form>
+
         {user && (
-          <div className="border-t border-rule pt-4">
-            <div className="flex items-start gap-3">
-              <Avatar name={user.display_name} size="sm" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-sans text-[0.8125rem] font-medium text-ink">
-                  {user.display_name}
-                </p>
-                <VerificationMark state={user.verification_state} />
-              </div>
-            </div>
-            <CopyableId id={user.id} />
+          <div className="flex shrink-0 items-center gap-3">
+            <Link
+              to="/notices/compose"
+              className="hidden rounded-full bg-accent-600 px-3.5 py-1.5 text-[0.8125rem] font-semibold text-white transition-colors hover:bg-accent-700 sm:inline-block"
+            >
+              Draft notice
+            </Link>
+            <Link to={`/people/${user.id}`} title="Your profile">
+              <Avatar name={user.display_name} size="sm" verification={user.verification_state} />
+            </Link>
             <button
               onClick={logout}
-              className="label-caps mt-3 text-ink-faint transition-colors hover:text-ink"
+              title="Sign out"
+              className="text-faint transition-colors hover:text-ink"
             >
-              Sign out
+              <LogOut className="size-4" />
             </button>
           </div>
         )}
-      </aside>
+      </div>
 
-      <div className="ml-64 min-h-screen">
-        <header className="border-b border-rule px-12 pb-6 pt-10">
-          <div className="flex items-end justify-between gap-6">
-            <div>
-              {kicker && <p className="kicker mb-2 text-ink-faint">{kicker}</p>}
-              <h1 className="font-display text-display-lg font-normal text-ink">{title}</h1>
-            </div>
-            {actions}
+      {/* Nav repeats below the bar on narrow viewports, where it doesn't
+          fit inline. */}
+      <nav className="flex items-center gap-1 overflow-x-auto border-t border-hairline px-4 py-2 md:hidden">
+        {navItems.map(({ to, label, end }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={end}
+            className={({ isActive }) =>
+              clsx(
+                "shrink-0 rounded-full px-3 py-1.5 text-[0.8125rem] font-medium transition-colors",
+                isActive ? "bg-accent-50 text-accent-700" : "text-muted",
+              )
+            }
+          >
+            {label}
+          </NavLink>
+        ))}
+      </nav>
+    </header>
+  );
+}
+
+/**
+ * AppShell renders the persistent chrome: a light top bar with a horizontal
+ * nav. Passing `left` and/or `right` turns on a two-column layout (main
+ * content plus a supporting rail); everything else gets a single column.
+ */
+export function AppShell({
+  children,
+  left,
+  right,
+  width = "wide",
+}: {
+  children: ReactNode;
+  left?: ReactNode;
+  right?: ReactNode;
+  width?: "wide" | "narrow";
+}) {
+  const hasRails = Boolean(left || right);
+
+  return (
+    <div className="min-h-screen bg-canvas">
+      <TopBar />
+      <div
+        className={clsx(
+          "mx-auto px-4 py-6 lg:px-6",
+          hasRails ? "max-w-app" : width === "narrow" ? "max-w-2xl" : "max-w-3xl",
+        )}
+      >
+        {hasRails ? (
+          <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_18rem]">
+            <div className="min-w-0">{children}</div>
+            <aside className="hidden xl:block">
+              <div className="sticky top-20 space-y-4">
+                {left}
+                {right}
+              </div>
+            </aside>
           </div>
-        </header>
-        <main className="px-12 py-8">{children}</main>
+        ) : (
+          children
+        )}
       </div>
     </div>
   );

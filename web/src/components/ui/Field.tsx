@@ -9,16 +9,14 @@ import clsx from "clsx";
 
 function Label({ htmlFor, children }: { htmlFor?: string; children: ReactNode }) {
   return (
-    <label htmlFor={htmlFor} className="label-caps mb-2 block text-ink-muted">
+    <label htmlFor={htmlFor} className="mb-1.5 block text-[0.8125rem] font-medium text-ink">
       {children}
     </label>
   );
 }
 
-// Flat, ruled fields — the look of a form on paper. The focus state darkens
-// the rule rather than painting a glow around it.
 const fieldBase =
-  "w-full rounded-none border border-rule bg-paper-raised px-3 py-2.5 font-sans text-[0.875rem] text-ink placeholder:text-ink-faint transition-colors focus-visible:outline-none focus-visible:border-ink disabled:bg-paper-sunken disabled:text-ink-faint";
+  "w-full rounded border border-divider bg-surface px-3 py-2 text-sm text-ink placeholder:text-faint transition-colors focus-visible:outline-none focus-visible:border-accent-600 disabled:bg-hairline/40 disabled:text-faint";
 
 interface WrapperProps {
   label?: string;
@@ -27,8 +25,8 @@ interface WrapperProps {
 }
 
 function Hint({ hint, error }: { hint?: string; error?: string }) {
-  if (error) return <p className="mt-1.5 font-sans text-meta text-signal-critical">{error}</p>;
-  if (hint) return <p className="mt-1.5 font-sans text-meta text-ink-faint">{hint}</p>;
+  if (error) return <p className="mt-1.5 text-xs text-severity-critical">{error}</p>;
+  if (hint) return <p className="mt-1.5 text-xs leading-relaxed text-muted">{hint}</p>;
   return null;
 }
 
@@ -41,7 +39,7 @@ export const TextInput = forwardRef<
     <input
       ref={ref}
       id={id}
-      className={clsx(fieldBase, error && "border-signal-critical", className)}
+      className={clsx(fieldBase, error && "border-severity-critical", className)}
       {...props}
     />
     <Hint hint={hint} error={error} />
@@ -58,7 +56,12 @@ export const TextArea = forwardRef<
     <textarea
       ref={ref}
       id={id}
-      className={clsx(fieldBase, "resize-none leading-relaxed", error && "border-signal-critical", className)}
+      className={clsx(
+        fieldBase,
+        "resize-none leading-relaxed",
+        error && "border-severity-critical",
+        className,
+      )}
       {...props}
     />
     <Hint hint={hint} error={error} />

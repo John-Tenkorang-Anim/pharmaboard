@@ -1,16 +1,32 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import clsx from "clsx";
+import {
+  MessageCircle,
+  Plus,
+  Send,
+  Video,
+  ShieldAlert,
+  Users as UsersIcon,
+  Lock,
+} from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { useAuth } from "@/features/auth/AuthContext";
 import { formatRelative, formatTime } from "@/lib/format";
 import type { Conversation, Message } from "@/lib/types";
-import { useConversation, useConversations, useMessages, useSendMessage, useStartCall } from "./api";
+import {
+  useConversation,
+  useConversations,
+  useMessages,
+  useSendMessage,
+  useStartCall,
+} from "./api";
 import { NewConversationModal } from "./NewConversationModal";
 
 function conversationLabel(conversation: Conversation): string {
@@ -31,55 +47,60 @@ function ConversationListItem({
     <button
       onClick={onClick}
       className={clsx(
-        "flex w-full items-start gap-3 border-t border-rule px-5 py-4 text-left transition-colors",
-        active ? "bg-paper-sunken" : "hover:bg-paper-sunken/60",
+        "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors",
+        active ? "bg-accent-50" : "hover:bg-canvas",
       )}
     >
-      <Avatar name={conversationLabel(conversation)} size="sm" />
+      {conversation.kind === "group" ? (
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-navy-400 to-navy-600 text-white">
+          <UsersIcon className="size-5" />
+        </div>
+      ) : (
+        <Avatar name={conversationLabel(conversation)} size="md" />
+      )}
       <div className="min-w-0 flex-1">
         <p
           className={clsx(
-            "truncate font-sans text-[0.8125rem] text-ink",
-            active && "font-medium",
+            "truncate text-[0.875rem] text-ink",
+            active ? "font-bold" : "font-semibold",
           )}
         >
           {conversationLabel(conversation)}
         </p>
-        <p className="mt-0.5 font-mono text-[0.625rem] uppercase tracking-[0.06em] text-ink-faint">
-          {conversation.kind === "group" ? "Group" : "Direct"}
-          <span className="px-1.5 text-rule">/</span>
-          {conversation.last_message_at ? formatRelative(conversation.last_message_at) : "No messages"}
+        <p className="truncate text-[0.8125rem] text-faint">
+          {conversation.last_message_at
+            ? formatRelative(conversation.last_message_at)
+            : "No messages yet"}
         </p>
       </div>
     </button>
   );
 }
 
-function MessageRow({ message, isOwn }: { message: Message; isOwn: boolean }) {
+function MessageBubble({ message, isOwn }: { message: Message; isOwn: boolean }) {
   if (message.kind === "system") {
     return (
-      <div className="flex items-center gap-3 py-3">
-        <span className="h-px flex-1 bg-rule" />
-        <span className="label-caps text-ink-faint">{message.body}</span>
-        <span className="h-px flex-1 bg-rule" />
+      <div className="flex justify-center py-2">
+        <span className="rounded-full border border-hairline bg-canvas px-3 py-1 text-xs text-faint">
+          {message.body}
+        </span>
       </div>
     );
   }
 
-  // Correspondence, not chat bubbles: sender rule, then the text at a
-  // readable measure. Own messages are marked by the rule side and label.
   return (
-    <div className={clsx("py-3.5", isOwn ? "pl-10" : "pr-10")}>
-      <div className={clsx("border-l-2 pl-4", isOwn ? "border-ink" : "border-rule")}>
-        <p className="label-caps text-ink-faint">
-          {isOwn ? "You" : "Correspondent"}
-          <span className="px-1.5 text-rule">/</span>
-          <span className="font-mono normal-case tracking-normal">
-            {formatTime(message.created_at)}
-          </span>
-        </p>
-        <p className="mt-1.5 whitespace-pre-wrap font-display text-[0.9375rem] leading-[1.65] text-ink">
-          {message.body}
+    <div className={clsx("flex", isOwn ? "justify-end" : "justify-start")}>
+      <div
+        className={clsx(
+          "max-w-[75%] rounded-lg px-4 py-2.5 text-[0.9375rem] leading-relaxed",
+          isOwn
+            ? "rounded-br-md bg-accent-700 text-white"
+            : "rounded-bl-md bg-surface text-ink border border-hairline",
+        )}
+      >
+        <p className="whitespace-pre-wrap">{message.body}</p>
+        <p className={clsx("mt-1 text-[0.625rem]", isOwn ? "text-hairline" : "text-faint")}>
+          {formatTime(message.created_at)}
         </p>
       </div>
     </div>
@@ -114,47 +135,52 @@ function ThreadView({ conversationId }: { conversationId: string }) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-start justify-between gap-4 border-b border-rule px-7 py-4">
-        <div>
-          <p className="font-display text-display-sm text-ink">
+      <div className="flex items-center justify-between gap-4 border-b border-hairline px-5 py-3">
+        <div className="min-w-0">
+          <p className="text-[0.9375rem] font-bold text-ink">
             {conversation ? conversationLabel(conversation) : "Conversation"}
           </p>
-          {conversation && (
-            <p className="mt-1 max-w-measure font-sans text-meta leading-relaxed text-ink-faint">
-              {conversation.encryption_notice}
-            </p>
-          )}
+          <p className="flex items-center gap-1 text-[0.8125rem] text-faint">
+            <Lock className="size-3" />
+            Not end-to-end encrypted
+          </p>
         </div>
-        <Button size="sm" variant="secondary" loading={startCall.isPending} onClick={handleStartCall}>
-          Start video call
+        <Button size="sm" loading={startCall.isPending} onClick={handleStartCall}>
+          <Video className="size-4" />
+          Video call
         </Button>
       </div>
 
-      <div ref={scrollRef} className="scrollbar-thin flex-1 overflow-y-auto px-7 py-4">
+      <div
+        ref={scrollRef}
+        className="scrollbar-thin flex-1 space-y-2.5 overflow-y-auto bg-canvas px-5 py-4"
+      >
         {isLoading ? (
           <SkeletonList rows={3} />
         ) : messages.length === 0 ? (
           <EmptyState
+            icon={<MessageCircle className="size-6" />}
             title="No messages yet"
-            description="Send the first message to open this correspondence."
+            description="Say hello to start the conversation."
           />
         ) : (
           messages.map((m) => (
-            <MessageRow key={m.id} message={m} isOwn={m.sender_id === user?.id} />
+            <MessageBubble key={m.id} message={m} isOwn={m.sender_id === user?.id} />
           ))
         )}
       </div>
 
       {startCall.data && (
-        <div className="border-t border-rule bg-paper-sunken px-7 py-3">
-          <p className="kicker text-signal-urgent">Third-party provider</p>
-          <p className="mt-1 font-sans text-meta leading-relaxed text-ink-muted">
-            {startCall.data.provider_notice}
-          </p>
+        <div className="flex items-start gap-2 border-t border-amber-50 bg-amber-50 px-5 py-2.5 text-[0.8125rem] text-amber-800">
+          <ShieldAlert className="mt-0.5 size-3.5 shrink-0" />
+          {startCall.data.provider_notice}
         </div>
       )}
 
-      <form onSubmit={handleSend} className="border-t border-rule px-7 py-4">
+      <form
+        onSubmit={handleSend}
+        className="flex items-end gap-2 border-t border-hairline bg-surface p-3"
+      >
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -164,24 +190,24 @@ function ThreadView({ conversationId }: { conversationId: string }) {
               handleSend(e);
             }
           }}
-          rows={2}
+          rows={1}
           placeholder="Write a message…"
-          className="w-full resize-none border border-rule bg-paper-raised px-3.5 py-3 font-display text-[0.9375rem] leading-relaxed text-ink placeholder:font-sans placeholder:text-[0.8125rem] placeholder:text-ink-faint focus-visible:border-ink focus-visible:outline-none"
+          className="max-h-32 flex-1 resize-none rounded-lg border border-hairline bg-canvas px-4 py-2.5 text-sm transition-colors placeholder:text-faint focus-visible:border-accent-600 focus-visible:bg-surface focus-visible:outline-none"
         />
-        <div className="mt-2.5 flex items-center justify-between">
-          <span className="font-mono text-[0.625rem] uppercase tracking-[0.06em] text-ink-faint">
-            Return to send · Shift + Return for a new line
-          </span>
-          <Button type="submit" size="sm" loading={sendMessage.isPending} disabled={!draft.trim()}>
-            Send
-          </Button>
-        </div>
-        {sendMessage.error != null && (
-          <div className="mt-3">
-            <ErrorBanner error={sendMessage.error} />
-          </div>
-        )}
+        <Button
+          type="submit"
+          loading={sendMessage.isPending}
+          disabled={!draft.trim()}
+          className="rounded-full !px-3"
+        >
+          <Send className="size-4" />
+        </Button>
       </form>
+      {sendMessage.error != null && (
+        <div className="px-3 pb-3">
+          <ErrorBanner error={sendMessage.error} />
+        </div>
+      )}
     </div>
   );
 }
@@ -193,69 +219,65 @@ export function MessagingPage() {
   const [modalOpen, setModalOpen] = useState(false);
 
   return (
-    <AppShell
-      kicker="Direct"
-      title="Messages"
-      actions={
-        <Button size="sm" onClick={() => setModalOpen(true)}>
-          New conversation
+    <AppShell>
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-[1.75rem] font-semibold text-ink">Messages</h1>
+          <p className="mt-1 text-sm text-faint">Direct and small-group conversations.</p>
+        </div>
+        <Button onClick={() => setModalOpen(true)}>
+          <Plus className="size-4" />
+          New
         </Button>
-      }
-    >
-      <div className="flex h-[calc(100vh-14rem)] border border-rule bg-paper-raised">
-        <aside className="flex w-72 shrink-0 flex-col border-r border-rule">
-          <p className="label-caps px-5 py-4 text-ink-faint">Correspondence</p>
+      </div>
+
+      <Card className="flex h-[calc(100vh-15rem)] overflow-hidden p-0">
+        <aside className="flex w-72 shrink-0 flex-col border-r border-hairline">
           <div className="scrollbar-thin flex-1 overflow-y-auto">
             {error != null && (
-              <div className="px-5 py-4">
+              <div className="p-4">
                 <ErrorBanner error={error} />
               </div>
             )}
             {isLoading ? (
-              <div className="px-5">
+              <div className="p-4">
                 <SkeletonList rows={4} />
               </div>
             ) : data && data.items.length > 0 ? (
-              <>
-                {data.items.map((c) => (
-                  <ConversationListItem
-                    key={c.id}
-                    conversation={c}
-                    active={c.id === conversationId}
-                    onClick={() => navigate(`/messaging/${c.id}`)}
-                  />
-                ))}
-                <div className="border-t border-rule" />
-              </>
+              data.items.map((c) => (
+                <ConversationListItem
+                  key={c.id}
+                  conversation={c}
+                  active={c.id === conversationId}
+                  onClick={() => navigate(`/messaging/${c.id}`)}
+                />
+              ))
             ) : (
-              <div className="px-5">
-                <EmptyState title="None yet" description="Start one to reach a colleague directly." />
-              </div>
+              <EmptyState title="No conversations" description="Start one to reach a colleague." />
             )}
           </div>
         </aside>
 
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           {conversationId ? (
             <ThreadView conversationId={conversationId} />
           ) : (
-            <div className="flex h-full items-center justify-center px-8">
-              <div className="max-w-measure text-center">
-                <p className="font-display text-display-sm text-ink">Select a conversation</p>
-                <p className="mt-2 font-sans text-[0.8125rem] leading-relaxed text-ink-muted">
-                  Choose a correspondence from the list, or start a new one. Messages are not
-                  end-to-end encrypted — see the notice shown in every conversation.
-                </p>
-                <div className="mt-6 flex justify-center">
-                  <Button size="sm" onClick={() => setModalOpen(true)}>
+            <div className="flex h-full items-center justify-center">
+              <EmptyState
+                icon={<MessageCircle className="size-6" />}
+                title="Select a conversation"
+                description="Choose one from the list, or start a new conversation."
+                action={
+                  <Button onClick={() => setModalOpen(true)}>
+                    <Plus className="size-4" />
                     New conversation
                   </Button>
-                </div>
-              </div>
+                }
+              />
             </div>
           )}
         </div>
-      </div>
+      </Card>
 
       <NewConversationModal
         open={modalOpen}

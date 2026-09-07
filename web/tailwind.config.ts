@@ -1,75 +1,73 @@
 import type { Config } from "tailwindcss";
 
-// Editorial / institutional design system. The governing idea: a notice is a
-// *published document* from an authority, not a row in a SaaS table. So the
-// vocabulary is print — ink on warm paper, hairline rules, a real type scale,
-// generous measure — and severity is carried by typographic weight and rule
-// thickness rather than by decorative colored pills.
+// PharmaBoard — a professional, industry-shaped system: a plain light
+// canvas, one confident accent colour that actually carries the product's
+// interactive identity (not just a verification checkmark), a horizontal
+// top nav, and plain divided list rows instead of stacked, individually
+// bordered/accent-barred cards. Two things were tried and walked back:
+// a full black-chrome, vertical-icon-rail clone of a specific reference
+// product (too literal, too monochrome), and a list pattern where every
+// row was its own rounded card with a coloured left bar (reads as boxes,
+// not as the dense tables real dashboards use).
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
       fontFamily: {
-        display: ["Newsreader", "Georgia", "Times New Roman", "serif"],
-        sans: ["IBM Plex Sans", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
+        sans: ["IBM Plex Sans", "-apple-system", "Segoe UI", "sans-serif"],
         mono: ["IBM Plex Mono", "ui-monospace", "SFMono-Regular", "monospace"],
+        // Tailwind ships a default `font-serif` (Georgia/Times) even though
+        // this only extends the theme — override it explicitly to the sans
+        // stack so a stray `font-serif` class (a leftover from an earlier
+        // design pass) fails visibly-as-sans, not silently as a real serif.
+        serif: ["IBM Plex Sans", "-apple-system", "Segoe UI", "sans-serif"],
       },
       colors: {
-        // Warm paper, not the blue-grey of every admin template.
-        paper: {
-          DEFAULT: "#FAF8F3",
-          raised: "#FFFFFF",
-          sunken: "#F2EFE7",
+        // A soft, faintly green-tinted off-white — not a neutral gray, and
+        // not the black-dominant chrome of the previous pass.
+        canvas: "#F6F9F7",
+        surface: "#FFFFFF",
+        ink: "#151A17",
+        muted: "#5C655F",
+        faint: "#8B958E",
+        hairline: "#DEE6E1",
+        divider: "#C7D1CA",
+
+        // The accent now carries the product's actual interactive identity
+        // — primary buttons, active nav, links, verification — not just a
+        // small checkmark against black chrome.
+        accent: {
+          50: "#EAF5EE",
+          100: "#D2ECDC",
+          400: "#3F9464",
+          600: "#1F7A46",
+          700: "#166238",
+          900: "#0E2A1B",
         },
-        ink: {
-          DEFAULT: "#17150F",
-          muted: "#5C574D",
-          faint: "#8C8578",
+
+        severity: {
+          info: "#3B5A78",
+          advisory: "#A6741B",
+          urgent: "#B8511F",
+          critical: "#9C1F28",
         },
-        rule: {
-          DEFAULT: "#DDD8CC",
-          strong: "#17150F",
-        },
-        // Ink-adjacent, print-like. Used for the severity kicker only — never
-        // as a filled pastel background.
-        signal: {
-          info: "#2C4A5C",
-          advisory: "#6B5A1E",
-          urgent: "#A6521C",
-          critical: "#8A1C1C",
-        },
-      },
-      fontSize: {
-        kicker: ["0.6875rem", { lineHeight: "1", letterSpacing: "0.14em" }],
-        label: ["0.6875rem", { lineHeight: "1.2", letterSpacing: "0.1em" }],
-        meta: ["0.75rem", { lineHeight: "1.5" }],
-        "display-sm": ["1.375rem", { lineHeight: "1.25", letterSpacing: "-0.01em" }],
-        "display-md": ["1.875rem", { lineHeight: "1.2", letterSpacing: "-0.015em" }],
-        "display-lg": ["2.625rem", { lineHeight: "1.12", letterSpacing: "-0.02em" }],
-        "display-xl": ["3.5rem", { lineHeight: "1.05", letterSpacing: "-0.025em" }],
-      },
-      maxWidth: {
-        measure: "34rem",
-        prose: "42rem",
       },
       borderRadius: {
-        none: "0",
-        sm: "2px",
+        DEFAULT: "0.5rem",
+        md: "0.5rem",
+        lg: "0.625rem",
       },
       boxShadow: {
-        // Print doesn't float. Kept minimal and only for true overlays.
-        overlay: "0 24px 64px -16px rgb(23 21 15 / 0.28)",
-      },
-      animation: {
-        "fade-in": "fade-in 0.18s ease-out",
-        "rise": "rise 0.22s cubic-bezier(0.2, 0.7, 0.3, 1)",
+        overlay: "0 16px 40px -12px rgb(11 11 12 / 0.35)",
       },
       keyframes: {
         "fade-in": { from: { opacity: "0" }, to: { opacity: "1" } },
-        rise: {
-          from: { opacity: "0", transform: "translateY(6px)" },
-          to: { opacity: "1", transform: "translateY(0)" },
-        },
+      },
+      animation: {
+        "fade-in": "fade-in 0.15s ease-out both",
+      },
+      maxWidth: {
+        app: "76rem",
       },
     },
   },

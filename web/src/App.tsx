@@ -5,8 +5,23 @@ import { LoginPage } from "@/features/auth/LoginPage";
 
 // Each feature is its own chunk, fetched only when the user navigates to
 // it, so the initial bundle stays small as more features are added —
-// notices/messaging/admin are already independent enough that no route
-// needs another route's code up front.
+// community/notices/messaging/admin are already independent enough that no
+// route needs another route's code up front.
+const HomePage = lazy(() =>
+  import("@/features/community/HomePage").then((m) => ({ default: m.HomePage })),
+);
+const ForumPage = lazy(() =>
+  import("@/features/community/ForumPage").then((m) => ({ default: m.ForumPage })),
+);
+const ThreadPage = lazy(() =>
+  import("@/features/community/ThreadPage").then((m) => ({ default: m.ThreadPage })),
+);
+const NetworkPage = lazy(() =>
+  import("@/features/community/NetworkPage").then((m) => ({ default: m.NetworkPage })),
+);
+const ProfilePage = lazy(() =>
+  import("@/features/community/ProfilePage").then((m) => ({ default: m.ProfilePage })),
+);
 const NoticesListPage = lazy(() =>
   import("@/features/notices/NoticesListPage").then((m) => ({ default: m.NoticesListPage })),
 );
@@ -25,8 +40,8 @@ const AdminPage = lazy(() =>
 
 function RouteFallback() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-paper">
-      <p className="label-caps animate-pulse text-ink-faint">Loading</p>
+    <div className="flex min-h-screen items-center justify-center bg-canvas">
+      <p className="kicker animate-pulse">Loading console</p>
     </div>
   );
 }
@@ -37,17 +52,100 @@ export function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 
-        <Route path="/notices" element={<RequireAuth><NoticesListPage /></RequireAuth>} />
-        <Route path="/notices/compose" element={<RequireAuth><ComposeNoticePage /></RequireAuth>} />
-        <Route path="/notices/:id" element={<RequireAuth><NoticeDetailPage /></RequireAuth>} />
+        <Route
+          path="/home"
+          element={
+            <RequireAuth>
+              <HomePage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/forum"
+          element={
+            <RequireAuth>
+              <ForumPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/forum/:id"
+          element={
+            <RequireAuth>
+              <ThreadPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/network"
+          element={
+            <RequireAuth>
+              <NetworkPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/people/:id"
+          element={
+            <RequireAuth>
+              <ProfilePage />
+            </RequireAuth>
+          }
+        />
 
-        <Route path="/messaging" element={<RequireAuth><MessagingPage /></RequireAuth>} />
-        <Route path="/messaging/:conversationId" element={<RequireAuth><MessagingPage /></RequireAuth>} />
+        <Route
+          path="/notices"
+          element={
+            <RequireAuth>
+              <NoticesListPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/notices/compose"
+          element={
+            <RequireAuth>
+              <ComposeNoticePage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/notices/:id"
+          element={
+            <RequireAuth>
+              <NoticeDetailPage />
+            </RequireAuth>
+          }
+        />
 
-        <Route path="/admin" element={<RequireAuth><AdminPage /></RequireAuth>} />
+        <Route
+          path="/messaging"
+          element={
+            <RequireAuth>
+              <MessagingPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/messaging/:conversationId"
+          element={
+            <RequireAuth>
+              <MessagingPage />
+            </RequireAuth>
+          }
+        />
 
-        <Route path="/" element={<Navigate to="/notices" replace />} />
-        <Route path="*" element={<Navigate to="/notices" replace />} />
+        <Route
+          path="/admin"
+          element={
+            <RequireAuth>
+              <AdminPage />
+            </RequireAuth>
+          }
+        />
+
+        <Route path="/" element={<Navigate to="/home" replace />} />
+        <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
     </Suspense>
   );

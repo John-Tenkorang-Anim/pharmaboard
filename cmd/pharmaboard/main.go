@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/admin"
+	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/community"
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/identity"
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/messaging"
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/notices"
@@ -65,6 +66,7 @@ type modules struct {
 	admin     *admin.Service
 	sync      *sync.Service
 	messaging *messaging.Service
+	community *community.Service
 }
 
 func wire(pool *pgxpool.Pool, cfg config.Config) modules {
@@ -82,7 +84,17 @@ func wire(pool *pgxpool.Pool, cfg config.Config) modules {
 	messagingRepo := messaging.NewPostgresRepository(pool)
 	messagingSvc := messaging.NewService(messagingRepo)
 
-	return modules{identity: identitySvc, notices: noticesSvc, admin: adminSvc, sync: syncSvc, messaging: messagingSvc}
+	communityRepo := community.NewPostgresRepository(pool)
+	communitySvc := community.NewService(communityRepo, identitySvc)
+
+	return modules{
+		identity:  identitySvc,
+		notices:   noticesSvc,
+		admin:     adminSvc,
+		sync:      syncSvc,
+		messaging: messagingSvc,
+		community: communitySvc,
+	}
 }
 
 func serve(ctx context.Context, cfg config.Config) error {
@@ -101,8 +113,12 @@ func serve(ctx context.Context, cfg config.Config) error {
 	router.Mount("/admin", admin.Routes(mods.admin, auth))
 	router.Mount("/sync", sync.Routes(mods.sync, auth))
 	router.Mount("/messaging", messaging.Routes(mods.messaging, auth))
+	router.Mount("/community", community.Routes(mods.community, auth))
+	router.Mount("/users", identity.DirectoryRoutes(mods.identity, auth))
 
-	slog.Info("pharmaboard API composed", "routes", []string{"/v1/auth", "/v1/notices", "/v1/admin", "/v1/sync", "/v1/messaging"})
+	slog.Info("pharmaboard API composed", "routes", []string{
+		"/v1/auth", "/v1/users", "/v1/notices", "/v1/admin", "/v1/sync", "/v1/messaging", "/v1/community",
+	})
 	return httpserver.Run(ctx, cfg, router)
 }
 

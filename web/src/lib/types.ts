@@ -143,3 +143,78 @@ export interface ProblemDetail {
   detail?: string;
   code?: string;
 }
+
+// --- community -------------------------------------------------------------
+
+export interface PublicProfile {
+  id: string;
+  display_name: string;
+  account_kind: AccountKind;
+  verification_state: VerificationState;
+  practice_area: string | null;
+  region_code: string | null;
+  council_reg_no?: string | null;
+}
+
+export interface FeedPost {
+  id: string;
+  body: string;
+  author: PublicProfile;
+  reaction_count: number;
+  viewer_reacted: boolean;
+  viewer_follows: boolean;
+  created_at: string;
+}
+
+export interface FeedResponse {
+  items: FeedPost[];
+  next_cursor?: string;
+}
+
+export interface ProfileStats {
+  posts: number;
+  followers: number;
+  following: number;
+}
+
+export interface ProfileView {
+  profile: PublicProfile;
+  stats: ProfileStats;
+  viewer_follows: boolean;
+  is_self: boolean;
+  posts: FeedPost[];
+}
+
+export interface ForumThreadSummary {
+  id: string;
+  title: string;
+  body: string;
+  tags: string[];
+  author: PublicProfile;
+  reply_count: number;
+  reaction_count: number;
+  viewer_reacted: boolean;
+  has_accepted: boolean;
+  created_at: string;
+  last_activity_at: string;
+}
+
+export interface ForumReply {
+  id: string;
+  body: string;
+  author: PublicProfile;
+  reaction_count: number;
+  viewer_reacted: boolean;
+  accepted: boolean;
+  created_at: string;
+}
+
+export interface ThreadDetail {
+  thread: ForumThreadSummary;
+  replies: ForumReply[];
+}
+
+export interface DirectoryResponse {
+  items: PublicProfile[];
+  next_cursor?: string;
+}

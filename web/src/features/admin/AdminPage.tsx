@@ -8,22 +8,12 @@ import { SkeletonList } from "@/components/ui/Skeleton";
 import { formatDateTime } from "@/lib/format";
 import { useAuditEvents, useBootstrap, useGrantRole, useVerifyUser, useRevokeUser } from "./api";
 
-function Section({
-  title,
-  note,
-  children,
-}: {
-  title: string;
-  note?: string;
-  children: ReactNode;
-}) {
+function Section({ title, note, children }: { title: string; note?: string; children: ReactNode }) {
   return (
-    <section className="border-t border-rule pt-6">
-      <p className="label-caps text-ink">{title}</p>
+    <section className="border-t border-hairline pt-6">
+      <p className="eyebrow text-ink">{title}</p>
       {note && (
-        <p className="mt-1.5 max-w-measure font-sans text-meta leading-relaxed text-ink-muted">
-          {note}
-        </p>
+        <p className="mt-1.5 max-w-sm text-[0.8125rem] leading-relaxed text-muted">{note}</p>
       )}
       <div className="mt-5">{children}</div>
     </section>
@@ -32,7 +22,7 @@ function Section({
 
 function Result({ show, children }: { show: boolean; children: ReactNode }) {
   if (!show) return null;
-  return <p className="mt-3 font-sans text-meta text-ink-muted">✓ {children}</p>;
+  return <p className="mt-3 text-[0.8125rem] text-muted">✓ {children}</p>;
 }
 
 function BootstrapSection() {
@@ -93,7 +83,7 @@ function GrantRoleSection() {
         <TextInput
           label="User ID"
           placeholder="00000000-0000-0000-0000-000000000000"
-          className="font-mono text-xs"
+          className="text-[0.8125rem] tracking-[0.02em] tnum"
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
           required
@@ -133,7 +123,7 @@ function VerificationSection() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <TextInput
           label="User ID"
-          className="font-mono text-xs"
+          className="text-[0.8125rem] tracking-[0.02em] tnum"
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
           required
@@ -203,21 +193,21 @@ function AuditSection() {
             .map((event) => (
               <div
                 key={event.ID}
-                className="flex items-baseline justify-between gap-6 border-t border-rule py-3"
+                className="flex items-baseline justify-between gap-6 border-t border-hairline py-3"
               >
                 <div className="min-w-0">
-                  <p className="font-sans text-[0.8125rem] text-ink">{event.Action}</p>
-                  <p className="mt-0.5 truncate font-mono text-[0.625rem] text-ink-faint">
+                  <p className="text-[0.8125rem] text-ink">{event.Action}</p>
+                  <p className="mt-0.5 truncate text-[0.6875rem] font-bold uppercase tracking-wide text-faint tnum">
                     {event.SubjectType}
                     {event.SubjectID && ` · ${event.SubjectID}`}
                   </p>
                 </div>
-                <span className="shrink-0 font-mono text-[0.625rem] uppercase tracking-[0.06em] text-ink-faint">
+                <span className="shrink-0 text-[0.6875rem] font-bold uppercase tracking-wide text-faint tnum">
                   {formatDateTime(event.OccurredAt)}
                 </span>
               </div>
             ))}
-          <div className="border-t border-rule" />
+          <div className="border-t border-hairline" />
         </div>
       ) : (
         <EmptyState title="No audit events recorded" />
@@ -228,12 +218,23 @@ function AuditSection() {
 
 export function AdminPage() {
   return (
-    <AppShell kicker="Administration" title="Roles &amp; audit">
-      <div className="mx-auto max-w-prose space-y-10">
-        <BootstrapSection />
-        <GrantRoleSection />
-        <VerificationSection />
-        <AuditSection />
+    <AppShell width="narrow">
+      <div className="mx-auto max-w-2xl">
+        <header className="mb-8">
+          <p className="eyebrow text-accent-600">Administration</p>
+          <h1 className="mt-1 text-[1.75rem] font-semibold text-ink">Roles & verification</h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted">
+            Least-privilege role grants, professional verification, and the append-only audit trail.
+            Every decision here is recorded with its reviewer and reason.
+          </p>
+        </header>
+
+        <div className="space-y-10">
+          <BootstrapSection />
+          <GrantRoleSection />
+          <VerificationSection />
+          <AuditSection />
+        </div>
       </div>
     </AppShell>
   );

@@ -33,10 +33,10 @@ func (s SubjectType) Valid() bool {
 }
 
 const (
-	MaxPostLength   = 4000
-	MaxThreadBody   = 8000
-	MaxTitleLength  = 200
-	MinTitleLength  = 5
+	MaxPostLength    = 4000
+	MaxThreadBody    = 8000
+	MaxTitleLength   = 200
+	MinTitleLength   = 5
 	MaxTagsPerThread = 5
 )
 
@@ -54,9 +54,9 @@ type Post struct {
 // has to issue follow-up requests per row.
 type FeedPost struct {
 	Post
-	Author         identity.Profile
-	ViewerReacted  bool
-	ViewerFollows  bool
+	Author        identity.Profile
+	ViewerReacted bool
+	ViewerFollows bool
 }
 
 type ForumThread struct {

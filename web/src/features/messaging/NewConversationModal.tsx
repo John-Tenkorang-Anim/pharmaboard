@@ -41,8 +41,8 @@ export function NewConversationModal({
     <Modal open={open} onClose={onClose} title="New conversation">
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <p className="label-caps mb-2 text-ink-muted">Participants</p>
-          <p className="mb-3 font-sans text-meta leading-relaxed text-ink-faint">
+          <p className="eyebrow mb-2 text-muted">Participants</p>
+          <p className="mb-3 text-[0.8125rem] leading-relaxed text-faint">
             There is no member directory yet — paste the user ID a colleague shared with you. Your
             own ID is at the foot of the sidebar.
           </p>
@@ -53,14 +53,14 @@ export function NewConversationModal({
                   value={id}
                   onChange={(e) => updateParticipant(i, e.target.value)}
                   placeholder="00000000-0000-0000-0000-000000000000"
-                  className="font-mono text-xs"
+                  className="text-[0.8125rem] tracking-[0.02em] tnum"
                   required={i === 0}
                 />
                 {participantIds.length > 1 && (
                   <button
                     type="button"
                     onClick={() => setParticipantIds((prev) => prev.filter((_, idx) => idx !== i))}
-                    className="label-caps shrink-0 px-2 text-ink-faint hover:text-ink"
+                    className="eyebrow shrink-0 px-2 hover:text-ink"
                   >
                     Remove
                   </button>

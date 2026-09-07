@@ -11,3 +11,6 @@ node_modules/
 tmp/
 *.log
 *.out
+*.tsbuildinfo
+web/vite.config.js
+web/vite.config.d.ts

@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect } from "react";
+import { X } from "lucide-react";
 
 export function Modal({
   open,
@@ -22,19 +23,18 @@ export function Modal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 animate-fade-in bg-ink/30" onClick={onClose} />
-      {/* A sheet of paper laid over the page — square corners, one rule. */}
-      <div className="relative w-full max-w-md animate-rise border border-ink bg-paper-raised shadow-overlay">
-        <div className="flex items-baseline justify-between border-b border-rule px-6 py-4">
-          <h2 className="font-display text-display-sm text-ink">{title}</h2>
+      <div className="absolute inset-0 bg-ink/40" onClick={onClose} />
+      <div className="relative w-full max-w-lg animate-fade-in rounded-md bg-surface shadow-overlay">
+        <div className="flex items-center justify-between border-b border-hairline px-5 py-4">
+          <h2 className="text-base font-semibold text-ink">{title}</h2>
           <button
             onClick={onClose}
-            className="label-caps text-ink-faint transition-colors hover:text-ink"
+            className="rounded p-1.5 text-faint transition-colors hover:bg-hairline/60 hover:text-ink"
           >
-            Close
+            <X className="size-4" />
           </button>
         </div>
-        <div className="px-6 py-5">{children}</div>
+        <div className="px-5 py-5">{children}</div>
       </div>
     </div>
   );

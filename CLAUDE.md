@@ -48,24 +48,28 @@ design. What exists and runs today:
   no custom video infrastructure (a public third-party room link, disclosed
   via `VideoProviderNotice`) — both are deliberate, documented decisions,
   not gaps to "fix."
+- **community**: the feed (post, endorse/react, follow, an "everyone" and a
+  "following" scope), the Rx Forum (threads, replies, tags, an accepted
+  answer that only the thread author may set), public profiles, and the
+  user directory/search that `messaging` needed (`GET /v1/users`).
 - **worker**: outbox-driven dispatch to a push channel via a `Provider`
   interface, retry with backoff+jitter, dead-lettering, plus the periodic
   watermark publisher and idempotency-key janitor.
 - **web console** (`web/`): a Vite + React + TypeScript SPA covering every
   module above — auth (register + dev-OTP login), notices (list, compose,
   the full approve/publish/withdraw lifecycle, live delivery report),
-  messaging (two-pane conversation view, video call handoff), and admin
-  (bootstrap, role grants, verification, audit trail). See "The web
-  console" below.
+  messaging (two-pane conversation view, video call handoff), community
+  (feed, Rx Forum, directory, profiles), and admin (bootstrap, role grants,
+  verification, audit trail). See "The web console" below.
 
-Not implemented — do not assume these exist: **community** (feed, forum —
-so there is no user directory/search; see the web console's "New
-conversation" gap below), **media** (uploads, scanning), real push/SMS/
-email providers, a mobile client, row-level authorization beyond "does the
-caller hold this role," messaging moderation/blocking (see ADR-0004's
-consequences), and any of the Gate 0 legal/compliance prerequisites in
-section 21 of the technical design (those are owned outside engineering
-and are not something code can satisfy).
+Not implemented — do not assume these exist: **media** (uploads, scanning),
+real push/SMS/email providers, a mobile client, row-level authorization
+beyond "does the caller hold this role," messaging moderation/blocking (see
+ADR-0004's consequences), and any of the Gate 0 legal/compliance
+prerequisites in section 21 of the technical design (those are owned
+outside engineering and are not something code can satisfy). `community`
+ships a `content_reports` table and a report endpoint, but nothing consumes
+them yet — there is no moderation queue.
 
 ### Known simplifications (fix before this goes near real user data)
 
@@ -197,36 +201,70 @@ login screen combines registration and dev-OTP login into one flow — see
 "Auth in development" below; there's no separate sign-up screen because
 the backend doesn't need one.
 
-**There is no user directory/search endpoint** (the `community` module
-isn't built), so starting a conversation in Messaging requires pasting the
-other person's exact user ID. Each user's own ID is shown, copyable, at
-the bottom of the sidebar — that's the only way two people can currently
-find each other to message.
+**The design language is a light, accent-led professional system — the
+fifth direction this project has been through, and the one that stuck.**
+In order: an editorial/serif "document from an authority" look; a flat
+statutory "Regulatory Console" (navy/teal/crimson, Public Sans, zero
+elevation — `docs/stitch_design/DESIGN.md`, now historical); a rounded
+indigo-gradient "modern SaaS" look (rejected as generic AI-slop — purple
+gradients, pastel-tinted stat tiles, bouncy heart reactions); a warm-paper
+serif "restrained editorial" pass (rejected as "childish" and too close to
+a LinkedIn/Instagram clone); and a monochrome black-chrome pass modelled
+too literally on a specific reference product (one2one.cc) — a solid
+black top bar, a persistent vertical icon sidebar, solid-black primary
+buttons, and notices rendered as individually bordered cards each with a
+coloured left accent bar. The last two of those were explicitly called
+out and reversed: **the vertical sidebar became a horizontal top nav, black
+chrome became this system's own accent colour, and a list of similar
+records (notices, forum threads, directory entries) became one bordered
+container with plain hairline-divided rows — never a stack of
+individually accent-barred boxes.** Don't reintroduce any of the above
+without being asked. Concretely, the system that stuck:
 
-**The design language is editorial/institutional, and it is deliberate.**
-The governing idea: a notice is a *published document from an authority*,
-not a row in a SaaS table. Concretely:
-
-- **Type carries the design.** Newsreader (editorial serif) for display and
-  notice body, IBM Plex Sans for chrome, IBM Plex Mono for IDs, timestamps
-  and audit data. Tracked-out caps ("kickers") label sections the way a
-  newspaper does.
-- **Severity is structural, not decorative.** A critical notice gets a
-  3px rule, a larger and heavier headline, and an oxblood kicker; an
-  informational one gets a hairline and regular weight. See
-  `severityRule()` and `SeverityKicker` in `components/ui/Badge.tsx` —
-  they are a pair and must stay in sync. Do **not** reduce severity to a
-  colored pill: for a product whose whole thesis is that some messages
-  must land with force, making a drug recall look like a UI chip is a
-  failure of the core idea, not a style preference.
-- **Ink on warm paper, hairline rules, no elevation.** Structure comes
-  from rules and spacing. There are no drop shadows outside true overlays
-  (`shadow-overlay`), and corners are square. If you find yourself adding
-  `rounded-2xl` and `shadow-card`, you're drifting back to the generic
-  admin template this replaced.
-- **No icon library.** Navigation and labels are typographic. `lucide-react`
-  was removed once nothing used it — don't reintroduce an icon set to
-  decorate something that reads fine as words.
+- **A soft green-tinted canvas** (`canvas` in `tailwind.config.ts`, not a
+  neutral gray and not black), white surfaces, one accent colour
+  (`accent-*`, a muted green) that actually carries the product's
+  interactive identity — primary buttons, active nav, links, verification
+  — not just a small checkmark against black chrome. Severity keeps its
+  own separate `severity-*` family so it's never confused with the brand
+  accent.
+- **Navigation is horizontal**, in the top bar (`AppShell.tsx`) — text
+  links with a light accent-tinted background on the active item. No
+  vertical icon rail, no solid black bar.
+- **A list of similar records is one bordered container with hairline
+  dividers between rows** (the `.list-card` / `.list-row` classes in
+  `index.css`) — not a stack of individually bordered, individually
+  rounded, individually accent-barred cards. See `NoticesListPage.tsx`,
+  `ForumPage.tsx`, `NetworkPage.tsx` for the pattern. A one-off document
+  view (a single notice's own detail page) is a different case and can
+  still use `severityAccent()`'s left border as a document-header
+  treatment — the rule is specifically about *repeated* rows.
+- **One typeface, no serif.** IBM Plex Sans for everything, IBM Plex Mono
+  for the rare tabular/ID string. Tailwind ships a default `font-serif`
+  utility even when you only `extend` the theme — `tailwind.config.ts`
+  explicitly overrides it to the sans stack so a stray `font-serif` class
+  left over from a prior pass fails visibly (renders as sans, looks
+  slightly off) instead of silently rendering a real serif. This exact bug
+  shipped once already; don't remove that override.
+- **The `.segment`/`.segment-item` classes in `index.css`** are the
+  accent-pill segmented control used for feed/list filters — reach for
+  those instead of a bespoke toggle. The active state is `bg-accent-600`,
+  not black.
+- **The stack itself has never changed** across any of the five passes —
+  Vite + React + TypeScript + Tailwind + TanStack Query. A request to
+  "redesign" or a complaint that "the framework is bad" alongside a visual
+  reference is almost always about this design-system layer
+  (`tailwind.config.ts` / `index.css` / the UI kit), not the framework —
+  confirm before doing anything more drastic than that.
+- **A mechanical find/replace across many files is fast but dangerous
+  here**: two separate corruptions shipped during earlier passes this way
+  — a CSS class rename (`token` → `chip`) silently mangled unrelated plain
+  text and a variable name (`"Bootstrap token"` label and a `const [token,
+  ...]` binding both became "chip"), and a component under
+  `components/ui/` kept a stray `font-serif` class because a retoken pass
+  only ever targeted `features/*`. After any bulk rename, grep the whole
+  `src/` tree, not just the files you meant to touch, for the old word
+  appearing in string literals and identifiers, not only `className`.
 
 Known frontend gaps, tracked but not yet fixed:
 - `npm audit` flags `react-router-dom` (open-redirect/SSR-hydration CVEs)
@@ -237,8 +275,12 @@ Known frontend gaps, tracked but not yet fixed:
   localhost) — deferred rather than rushed, but don't let this go stale
   if the app's usage changes.
 - Conversation list items show "Direct message" / the group title, not
-  the other participant's name — resolving that needs the same missing
-  directory.
+  the other participant's name, even though `community` now provides the
+  directory that could resolve it.
+- `web/` has no linter and no CI check for the frontend; `npm run
+  typecheck` and the `run-web-console` skill are the only gates. Prettier
+  is used ad hoc via `npx prettier` (config in `web/.prettierrc`), not
+  wired into `make check`.
 
 **Visually verifying a UI change**: use the `run-web-console` project
 skill (`.claude/skills/run-web-console/SKILL.md`) — it launches a real
@@ -301,7 +343,14 @@ not a commitment). Never let this code path run with `PHARMABOARD_ENV=production
   intentional so `go test ./...` never silently requires infrastructure.
 - `make test-integration` — the same suite with
   `PHARMABOARD_TEST_DATABASE_URL` set from `.env`, so the DB-backed tests
-  actually run. These hit a **real** PostgreSQL, per section 18 ("real
+  actually run. **This target is silently a no-op without a `.env`**: it
+  sources the file if present, so a missing (or `PHARMABOARD_DATABASE_URL`-less)
+  `.env` exports an empty test URL and every DB-backed test skips itself
+  while the run still reports `ok`. Coverage is the tell — the DB-backed
+  packages report ~25-75% when the tests really ran and 0.0% when they all
+  skipped. Run `make bootstrap` (and point the URL at port 5544 if you use
+  the user-local Postgres from "Running it locally") before trusting a
+  green integration run. These hit a **real** PostgreSQL, per section 18 ("real
   PostgreSQL; constraints, locking, idempotency, retries" — a mock
   connection cannot exercise `FOR UPDATE SKIP LOCKED`, advisory locks, or
   CHECK constraints).

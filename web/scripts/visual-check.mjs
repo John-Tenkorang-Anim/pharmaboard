@@ -44,22 +44,53 @@ const codeHint = await page.locator("#code").inputValue();
 console.log("pre-filled dev OTP code:", codeHint);
 
 await page.click('button:has-text("Verify and continue")');
-await page.waitForURL("**/notices", { timeout: 10000 });
-await page.waitForSelector("text=Notices");
-await page.screenshot({ path: `${SHOT_DIR}/03-notices-list.png` });
-console.log("screenshot: 03-notices-list.png, url:", page.url());
+// The console now lands on the community feed rather than the notices list.
+await page.waitForURL("**/home", { timeout: 10000 });
+await page.waitForSelector("text=All members");
+await page.waitForLoadState("networkidle");
+await page.waitForTimeout(500); // let entrance animations settle
+await page.screenshot({ path: `${SHOT_DIR}/03-feed.png` });
+console.log("screenshot: 03-feed.png, url:", page.url());
+
+await page.click('a[href="/forum"]');
+await page.waitForURL("**/forum");
+await page.waitForSelector('h1:has-text("Rx Forum")');
+await page.waitForLoadState("networkidle");
+await page.waitForTimeout(500); // let entrance animations settle
+await page.screenshot({ path: `${SHOT_DIR}/04-forum.png` });
+console.log("screenshot: 04-forum.png, url:", page.url());
+
+await page.click('a[href="/network"]');
+await page.waitForURL("**/network");
+await page.waitForSelector('h1:has-text("Directory")');
+await page.waitForLoadState("networkidle");
+await page.waitForTimeout(500); // let entrance animations settle
+await page.screenshot({ path: `${SHOT_DIR}/05-directory.png` });
+console.log("screenshot: 05-directory.png, url:", page.url());
+
+await page.click('a[href="/notices"]');
+await page.waitForURL("**/notices");
+await page.waitForSelector('h1:has-text("Notices")');
+await page.waitForLoadState("networkidle");
+await page.waitForTimeout(500); // let entrance animations settle
+await page.screenshot({ path: `${SHOT_DIR}/06-notices-list.png` });
+console.log("screenshot: 06-notices-list.png, url:", page.url());
 
 await page.click('a[href="/messaging"]');
 await page.waitForURL("**/messaging");
-await page.waitForSelector("text=Correspondence");
-await page.screenshot({ path: `${SHOT_DIR}/04-messaging.png` });
-console.log("screenshot: 04-messaging.png, url:", page.url());
+await page.waitForSelector("h1:has-text(\"Messages\")");
+await page.waitForLoadState("networkidle");
+await page.waitForTimeout(500); // let entrance animations settle
+await page.screenshot({ path: `${SHOT_DIR}/07-messaging.png` });
+console.log("screenshot: 07-messaging.png, url:", page.url());
 
 await page.click('a[href="/notices/compose"]');
 await page.waitForURL("**/notices/compose");
-await page.waitForSelector("text=Compose a notice");
-await page.screenshot({ path: `${SHOT_DIR}/05-compose.png` });
-console.log("screenshot: 05-compose.png, url:", page.url());
+await page.waitForSelector("h1:has-text(\"Compose a notice\")");
+await page.waitForLoadState("networkidle");
+await page.waitForTimeout(500); // let entrance animations settle
+await page.screenshot({ path: `${SHOT_DIR}/08-compose.png` });
+console.log("screenshot: 08-compose.png, url:", page.url());
 
 await page.click('a[href="/admin"]');
 await page.waitForURL("**/admin");
@@ -71,8 +102,8 @@ await page.waitForSelector("text=Bootstrap the first administrator");
 // the screenshot shows the resolved error state, not a stuck skeleton.
 await page.waitForLoadState("networkidle");
 await page.waitForTimeout(2000);
-await page.screenshot({ path: `${SHOT_DIR}/06-admin.png` });
-console.log("screenshot: 06-admin.png, url:", page.url());
+await page.screenshot({ path: `${SHOT_DIR}/09-admin.png` });
+console.log("screenshot: 09-admin.png, url:", page.url());
 
 console.log("\n== console errors ==");
 console.log(consoleErrors.length === 0 ? "(none)" : consoleErrors.join("\n"));

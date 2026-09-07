@@ -8,6 +8,21 @@ import { ApiError } from "@/lib/api";
 
 type Step = "contact" | "code";
 
+const PROOF_POINTS = [
+  {
+    title: "Two-person approval",
+    body: "No single account can both write and approve a critical notice.",
+  },
+  {
+    title: "Frozen audience",
+    body: "Every recipient is recorded in the same transaction that publishes.",
+  },
+  {
+    title: "Delivery evidence",
+    body: "Accepted, delivered, read and acknowledged are counted separately.",
+  },
+];
+
 export function LoginPage() {
   const { requestOtp, register, verifyOtp } = useAuth();
   const navigate = useNavigate();
@@ -50,7 +65,7 @@ export function LoginPage() {
     setBusy(true);
     try {
       await verifyOtp("phone", phone, code);
-      const redirectTo = (location.state as { from?: string } | null)?.from ?? "/notices";
+      const redirectTo = (location.state as { from?: string } | null)?.from ?? "/home";
       navigate(redirectTo, { replace: true });
     } catch (err) {
       setError(err);
@@ -60,30 +75,21 @@ export function LoginPage() {
   }
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
-      {/* Statement panel: the masthead and the product's actual claim, set
-          large. An institution introduces itself before asking for details. */}
-      <div className="hidden flex-col justify-between border-r border-rule bg-paper-sunken px-14 py-14 lg:flex">
-        <div>
-          <p className="font-display text-[1.75rem] font-semibold leading-none tracking-tight text-ink">
-            PharmaBoard
-          </p>
-          <p className="label-caps mt-3 text-ink-faint">Pharmacy Notices · Ghana</p>
-        </div>
+    <div className="grid min-h-screen lg:grid-cols-[1fr_1fr]">
+      {/* Solid black statement panel — plain wordmark, a bold claim, three
+          plain proof points below a hairline. No gradient, no illustration. */}
+      <div className="hidden flex-col justify-between bg-accent-900 px-16 py-16 lg:flex">
+        <p className="text-lg font-bold text-white">PharmaBoard</p>
 
         <div className="max-w-md">
-          <p className="font-display text-display-lg font-normal leading-[1.15] text-ink">
+          <p className="text-[1.75rem] font-semibold leading-[1.3] text-white">
             Official notices, delivered to verified professionals — and provably so.
           </p>
-          <div className="mt-8 space-y-4 border-t border-rule pt-6">
-            {[
-              ["Two-person approval", "No single account can both write and approve a critical notice."],
-              ["Frozen audience", "Every recipient is recorded in the same transaction that publishes."],
-              ["Delivery evidence", "Accepted, delivered, read and acknowledged are counted separately."],
-            ].map(([title, body]) => (
+          <div className="mt-10 space-y-5 border-t border-white/15 pt-6">
+            {PROOF_POINTS.map(({ title, body }) => (
               <div key={title}>
-                <p className="label-caps text-ink">{title}</p>
-                <p className="mt-1 max-w-measure font-sans text-[0.8125rem] leading-relaxed text-ink-muted">
+                <p className="text-[0.8125rem] font-semibold text-white">{title}</p>
+                <p className="mt-1 max-w-sm text-[0.8125rem] leading-relaxed text-white/60">
                   {body}
                 </p>
               </div>
@@ -91,22 +97,18 @@ export function LoginPage() {
           </div>
         </div>
 
-        <p className="font-mono text-[0.625rem] uppercase tracking-[0.06em] text-ink-faint">
-          No patient data is processed on this platform
-        </p>
+        <p className="eyebrow text-white/40">No patient data is processed on this platform</p>
       </div>
 
       {/* Form panel */}
       <div className="flex items-center justify-center px-6 py-14">
         <div className="w-full max-w-sm">
-          <p className="font-display text-[1.5rem] font-semibold leading-none tracking-tight text-ink lg:hidden">
-            PharmaBoard
-          </p>
+          <p className="text-lg font-bold text-ink lg:hidden">PharmaBoard</p>
 
-          <p className="kicker mt-1 text-ink-faint lg:mt-0">
+          <p className="eyebrow mt-1 lg:mt-0">
             {step === "contact" ? "Sign in or register" : "Confirm your number"}
           </p>
-          <h1 className="mt-3 font-display text-display-md font-normal text-ink">
+          <h1 className="mt-2 text-2xl font-bold text-ink">
             {step === "contact" ? "Access the register" : "Enter your code"}
           </h1>
 
@@ -167,7 +169,12 @@ export function LoginPage() {
               <Button type="submit" loading={busy} className="w-full">
                 Verify and continue
               </Button>
-              <Button type="button" variant="quiet" onClick={() => setStep("contact")}>
+              <Button
+                type="button"
+                variant="quiet"
+                onClick={() => setStep("contact")}
+                className="w-full"
+              >
                 Use a different number
               </Button>
             </form>
