@@ -109,6 +109,8 @@ export function useSetFollow() {
       if (context?.previous) queryClient.setQueryData(context.key, context.previous);
     },
     onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ["network"] });
+      void queryClient.invalidateQueries({ queryKey: ["profile"] });
       void queryClient.invalidateQueries({ queryKey: ["feed"] });
       void queryClient.invalidateQueries({ queryKey: ["community-feed"] });
     },
@@ -240,4 +242,22 @@ export function usePostActions(postId: string) {
       apiFetch(`/community/posts/${postId}/report`, { method: "POST", body: { reason } }),
   });
   return { comment, remove, react, report };
+}
+
+export type NetworkView = "following" | "followers" | "discover" | "suggested";
+export function useNetwork(view: NetworkView, search: string) {
+  return useInfiniteQuery({
+    queryKey: ["network", view, search],
+    initialPageParam: "",
+    queryFn: ({ pageParam }) =>
+      apiFetch<{
+        items: (DirectoryResponse["items"][number] & {
+          viewer_follows: boolean;
+          mutual_count: number;
+          suggestion_reason: string;
+        })[];
+        next_cursor: string;
+      }>(`/community/network?view=${view}&q=${encodeURIComponent(search)}&after=${pageParam}`),
+    getNextPageParam: (last) => last.next_cursor || undefined,
+  });
 }

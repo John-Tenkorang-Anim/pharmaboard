@@ -8,6 +8,7 @@ import (
 
 // Repository is the persistence port for the community module.
 type Repository interface {
+	NetworkIDs(context.Context, uuid.UUID, string, uuid.UUID) ([]NetworkCandidate, error)
 	CreatePostComment(context.Context, PostComment) error
 	PostComments(context.Context, uuid.UUID, int, int) ([]PostComment, error)
 	DeletePostComment(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) error

@@ -297,3 +297,38 @@ func TestPostCommentThreadIntegrity(t *testing.T) {
 		t.Fatal("hidden posts must not accept replies")
 	}
 }
+
+func TestNetworkGraphSeparatesFollowingAndRecommendations(t *testing.T) {
+	pool := testPool(t)
+	ctx := context.Background()
+	repo := community.NewPostgresRepository(pool)
+	a, b, c, d := mustCreateUser(t, pool), mustCreateUser(t, pool), mustCreateUser(t, pool), mustCreateUser(t, pool)
+	defer func() {
+		pool.Exec(ctx, `DELETE FROM follows WHERE follower_id=ANY($1) OR followee_id=ANY($1)`, []uuid.UUID{a, b, c, d})
+		pool.Exec(ctx, `DELETE FROM users WHERE id=ANY($1)`, []uuid.UUID{a, b, c, d})
+	}()
+	for _, edge := range [][2]uuid.UUID{{a, b}, {b, c}, {a, d}, {d, c}, {b, a}} {
+		if err := repo.Follow(ctx, edge[0], edge[1]); err != nil {
+			t.Fatal(err)
+		}
+	}
+	list, err := repo.NetworkIDs(ctx, a, "following", uuid.Nil)
+	if err != nil || len(list) != 2 {
+		t.Fatalf("following %+v %v", list, err)
+	}
+	suggestions, err := repo.NetworkIDs(ctx, a, "suggested", uuid.Nil)
+	if err != nil || len(suggestions) != 1 || suggestions[0].ID != c || suggestions[0].Mutual != 2 {
+		t.Fatalf("suggestions %+v %v", suggestions, err)
+	}
+	followers, err := repo.NetworkIDs(ctx, a, "followers", uuid.Nil)
+	if err != nil || len(followers) != 1 || followers[0].ID != b {
+		t.Fatalf("followers %+v %v", followers, err)
+	}
+	if err := repo.Follow(ctx, a, c); err != nil {
+		t.Fatal(err)
+	}
+	suggestions, err = repo.NetworkIDs(ctx, a, "suggested", uuid.Nil)
+	if err != nil || len(suggestions) != 0 {
+		t.Fatalf("already followed suggested %+v %v", suggestions, err)
+	}
+}

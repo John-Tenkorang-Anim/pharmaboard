@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Search, Users, MapPin, ArrowUpRight, UserRound, Check, Plus } from "lucide-react";
+import { Search, Users, MapPin, ArrowUpRight, Check, Plus } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -9,8 +9,7 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { VerificationChip } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
-import { useAuth } from "@/features/auth/AuthContext";
-import { useDirectory, useProfile, useSetFollow } from "./api";
+import { useNetwork, type NetworkView, useProfile, useSetFollow } from "./api";
 
 function ProfilePreview({ id, onClose }: { id: string | undefined; onClose: () => void }) {
   const { data, isLoading, error } = useProfile(id);
@@ -23,6 +22,7 @@ function ProfilePreview({ id, onClose }: { id: string | undefined; onClose: () =
         <div>
           <div className="flex items-center gap-4">
             <Avatar
+              userId={data.profile.id}
               name={data.profile.display_name}
               size="xl"
               verification={data.profile.verification_state}
@@ -79,132 +79,160 @@ function ProfilePreview({ id, onClose }: { id: string | undefined; onClose: () =
 }
 export function NetworkPage() {
   const [params, setParams] = useSearchParams();
-  const { user } = useAuth();
+  const initial = params.get("view");
+  const view: NetworkView =
+    initial === "followers" || initial === "discover" || initial === "suggested"
+      ? initial
+      : params.has("q") && !initial
+        ? "discover"
+        : "following";
   const [term, setTerm] = useState(params.get("q") ?? "");
   const [debounced, setDebounced] = useState(term);
-  const [kind, setKind] = useState("all");
   const [selected, setSelected] = useState<string>();
+  const follow = useSetFollow();
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebounced(term);
-      setParams(term ? { q: term } : {}, { replace: true });
-    }, 250);
+    const timer = setTimeout(() => setDebounced(term), 250);
     return () => clearTimeout(timer);
-  }, [term, setParams]);
-  const { data, isLoading, error } = useDirectory(debounced);
-  const others = (data?.items ?? []).filter(
-    (p) => p.id !== user?.id && (kind === "all" || p.account_kind === kind),
-  );
+  }, [term]);
+  const network = useNetwork(view, debounced);
+  const people = network.data?.pages.flatMap((p) => p.items) ?? [];
   return (
     <AppShell>
-      <header className="mb-7">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-accent-700">
-          Your professional community
-        </p>
-        <h1 className="text-3xl font-semibold tracking-tight">My network</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-          Get to know the people behind the profession. Explore profiles, find shared interests and
-          follow colleagues you want to learn from.
+      <header className="mb-6">
+        <h1 className="text-3xl font-semibold">
+          {view === "following"
+            ? "My network"
+            : view === "followers"
+              ? "Your followers"
+              : view === "suggested"
+                ? "People you may know"
+                : "Discover people"}
+        </h1>
+        <p className="mt-2 text-sm text-muted">
+          {view === "following"
+            ? "People you follow, all in one place."
+            : view === "suggested"
+              ? "Suggestions from people you follow, your school and your field."
+              : "Explore public member profiles and follow people you’d like to learn from."}
         </p>
       </header>
-      <div className="mb-6 flex flex-wrap items-center gap-4">
-        <label className="relative min-w-[200px] max-w-xl flex-1">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-faint" />
-          <input
-            aria-label="Search network"
-            value={term}
-            onChange={(e) => setTerm(e.target.value)}
-            placeholder="Search by name…"
-            className="w-full rounded-lg border border-hairline bg-white py-3 pl-10 pr-4 text-sm focus-visible:outline-accent-600"
-          />
-        </label>
-        <select
-          aria-label="Professional role"
-          value={kind}
-          onChange={(e) => setKind(e.target.value)}
-          className="rounded-lg border border-hairline bg-white px-3 py-3 text-sm"
-        >
-          <option value="all">All professionals</option>
-          <option value="pharmacist">Pharmacists</option>
-          <option value="student">Students</option>
-          <option value="organisation">Schools / organisations</option>
-          <option value="professional">Professionals</option>
-          <option value="educator">Educators</option>
-        </select>
-      </div>
-      <ErrorBanner error={error} />
-      {isLoading ? (
-        <SkeletonList rows={5} />
-      ) : others.length ? (
-        <>
-          <p className="mb-4 text-xs text-faint" role="status">
-            Showing {others.length} profiles
-            {data?.items.length === 30 ? " · Refine your search to find more colleagues" : ""}
-          </p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-            {others.map((person) => (
-              <article key={person.id} className="social-card flex min-w-0 flex-col p-5">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <Link
-                    to={`/people/${person.id}`}
-                    aria-label={`View ${person.display_name}'s profile`}
-                  >
-                    <Avatar
-                      userId={person.id}
-                      name={person.display_name}
-                      size="lg"
-                      verification={person.verification_state}
-                    />
-                  </Link>
-                  <span className="rounded-md bg-slate-50 px-2 py-1 text-[11px] capitalize text-muted">
-                    {person.account_kind}
-                  </span>
-                </div>
-                <h2 className="break-words text-base font-semibold leading-6">
-                  <Link className="hover:text-accent-700" to={`/people/${person.id}`}>
-                    {person.display_name}
-                  </Link>
-                </h2>
-                <p className="mt-1 text-sm capitalize text-muted">
-                  {person.practice_area ||
-                    (person.account_kind === "student"
-                      ? "Student"
-                      : person.account_kind === "organisation"
-                        ? "Professional organisation"
-                        : person.account_kind)}
-                </p>
-                {person.institution && (
-                  <p className="mt-2 text-xs text-muted">{person.institution}</p>
-                )}
-                <p className="mt-3 flex items-center gap-1.5 text-xs text-faint">
-                  <MapPin size={13} />
-                  {person.region_code || "Location not added"}
-                </p>
-                <div className="mt-3">
-                  <VerificationChip state={person.verification_state} />
-                </div>
-                <div className="mt-auto flex items-center justify-between gap-2 pt-5">
-                  <Button size="sm" variant="secondary" onClick={() => setSelected(person.id)}>
-                    <UserRound size={14} />
-                    Quick view
-                  </Button>
-                  <Link
-                    className="flex items-center gap-1 text-xs font-medium text-accent-700"
-                    to={`/people/${person.id}`}
-                  >
-                    Full profile <ArrowUpRight size={14} />
-                  </Link>
-                </div>
-              </article>
-            ))}
-          </div>
-        </>
-      ) : (
-        <EmptyState
-          icon={<Users className="size-6" />}
-          title="No colleagues found"
-          description="Try a different name or professional role."
+      <nav aria-label="Network views" className="mb-5 flex flex-wrap gap-2">
+        {(
+          [
+            ["following", "Following"],
+            ["followers", "Followers"],
+            ["discover", "Discover people"],
+            ["suggested", "Suggested"],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            aria-pressed={view === key}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold ${view === key ? "bg-accent-600 text-white" : "bg-white text-muted"}`}
+            onClick={() => {
+              setTerm("");
+              setDebounced("");
+              setParams({ view: key });
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+      <label className="relative mb-6 block max-w-xl">
+        <Search size={17} className="absolute left-3 top-3.5 text-muted" />
+        <input
+          aria-label="Search network"
+          value={term}
+          onChange={(e) => setTerm(e.target.value)}
+          placeholder={view === "following" ? "Search people you follow…" : "Search people…"}
+          className="w-full rounded-lg border border-hairline bg-white py-3 pl-10 pr-4 text-sm"
         />
+      </label>
+      <ErrorBanner error={network.error || follow.error} />
+      {network.isLoading ? (
+        <SkeletonList rows={5} />
+      ) : people.length ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+          {people.map((person) => (
+            <article key={person.id} className="social-card flex flex-col p-5">
+              <Link to={`/people/${person.id}`} className="flex items-center gap-3">
+                <Avatar
+                  userId={person.id}
+                  name={person.display_name}
+                  size="lg"
+                  verification={person.verification_state}
+                />
+                <div className="min-w-0">
+                  <h2 className="break-words font-semibold">{person.display_name}</h2>
+                  <p className="mt-1 text-xs capitalize text-muted">
+                    {person.practice_area || person.account_kind}
+                  </p>
+                </div>
+              </Link>
+              {person.institution && (
+                <p className="mt-3 text-sm text-muted">{person.institution}</p>
+              )}
+              {view === "suggested" && (
+                <p className="mt-3 text-xs text-accent-700">
+                  {person.suggestion_reason}
+                  {person.mutual_count > 0 ? ` · ${person.mutual_count}` : ""}
+                </p>
+              )}
+              <div className="mt-auto flex items-center justify-between gap-2 pt-5">
+                <Button
+                  variant={person.viewer_follows ? "secondary" : "primary"}
+                  disabled={follow.isPending}
+                  onClick={() => follow.mutate({ userId: person.id, on: !person.viewer_follows })}
+                  aria-label={`${person.viewer_follows ? "Unfollow" : "Follow"} ${person.display_name}`}
+                >
+                  {person.viewer_follows ? <Check size={15} /> : <Plus size={15} />}{" "}
+                  {person.viewer_follows ? "Following" : "Follow"}
+                </Button>
+                <button
+                  className="text-xs font-semibold text-muted hover:underline"
+                  onClick={() => setSelected(person.id)}
+                >
+                  Quick view
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : !network.error ? (
+        <EmptyState
+          icon={<Users size={24} />}
+          title={
+            view === "following" && !term ? "Your network starts here" : "No people on this page"
+          }
+          description={
+            view === "following" && !term
+              ? "Discover colleagues and follow them to add them to your network."
+              : "Try another search or explore more members."
+          }
+          action={
+            <Button
+              onClick={() => {
+                setTerm("");
+                setDebounced("");
+                setParams({ view: "discover" });
+              }}
+            >
+              Discover people
+            </Button>
+          }
+        />
+      ) : null}
+      {network.hasNextPage && (
+        <div className="mt-6">
+          <Button
+            variant="secondary"
+            loading={network.isFetchingNextPage}
+            onClick={() => network.fetchNextPage()}
+          >
+            Show more people
+          </Button>
+        </div>
       )}
       <ProfilePreview
         key={selected ?? "closed"}

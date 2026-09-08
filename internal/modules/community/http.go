@@ -110,6 +110,7 @@ func Routes(svc *Service, auth func(http.Handler) http.Handler) chi.Router {
 		r.Post("/report", reportHandler(svc, SubjectPost))
 	})
 
+	r.Get("/network", networkHandler(svc))
 	r.Route("/people/{id}", func(r chi.Router) {
 		r.Get("/", profileHandler(svc))
 		r.Put("/follow", followHandler(svc, true))
