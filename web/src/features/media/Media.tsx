@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ImagePlus, Video, X } from "lucide-react";
 import { getToken } from "@/lib/api";
 const base = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080/v1";
@@ -89,10 +89,12 @@ export function MediaPicker({
   value,
   onChange,
   onBusy,
+  actions,
 }: {
   value: string[];
   onChange: (value: string[]) => void;
   onBusy?: (busy: boolean) => void;
+  actions?: ReactNode;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false),
@@ -151,16 +153,19 @@ export function MediaPicker({
         accept="image/jpeg,image/png,video/mp4,video/webm"
         onChange={(e) => upload(e.target.files?.[0])}
       />
-      <button
-        type="button"
-        disabled={busy || value.length >= 4}
-        onClick={() => input.current?.click()}
-        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-accent-700 hover:bg-accent-50 disabled:opacity-50"
-      >
-        <ImagePlus size={18} />
-        <Video size={18} />
-        {busy ? "Uploading…" : "Photo / video"}
-      </button>
+      <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap">
+        <button
+          type="button"
+          disabled={busy || value.length >= 4}
+          onClick={() => input.current?.click()}
+          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-accent-700 hover:bg-accent-50 disabled:opacity-50"
+        >
+          <ImagePlus size={18} />
+          <Video size={18} />
+          {busy ? "Uploading…" : "Photo / video"}
+        </button>
+        {actions}
+      </div>
       {value.length > 0 && (
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {value.map((id) => (

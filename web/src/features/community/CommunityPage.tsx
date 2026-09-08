@@ -69,6 +69,30 @@ export function PostComposer({ scope = "everyone" }: { scope?: FeedScope }) {
             setOpen(true);
           }}
           onBusy={setUploading}
+          actions={
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(true);
+                  document
+                    .querySelector<HTMLTextAreaElement>('textarea[aria-label="Create a post"]')
+                    ?.focus();
+                }}
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted hover:bg-slate-50"
+              >
+                <PenLine size={16} />
+                Write a post
+              </button>
+              <Link
+                to="/forum"
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted hover:bg-slate-50"
+              >
+                <MessageSquare size={16} />
+                Ask in {platform.forumName}
+              </Link>
+            </>
+          }
         />
         {open || media.length ? (
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
@@ -83,18 +107,7 @@ export function PostComposer({ scope = "everyone" }: { scope?: FeedScope }) {
               Publish post
             </Button>
           </div>
-        ) : (
-          <div className="ml-12 mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted">
-            <button type="button" onClick={() => setOpen(true)} className="flex items-center gap-2">
-              <PenLine size={14} />
-              Share an update
-            </button>
-            <Link to="/forum" className="flex items-center gap-2">
-              <MessageSquare size={14} />
-              Ask in {platform.forumName}
-            </Link>
-          </div>
-        )}
+        ) : null}
         <ErrorBanner error={create.error} />
       </form>
     </section>

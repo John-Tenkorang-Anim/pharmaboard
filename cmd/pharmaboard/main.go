@@ -17,6 +17,7 @@ import (
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/admin"
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/community"
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/identity"
+	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/library"
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/media"
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/messaging"
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/notices"
@@ -138,11 +139,12 @@ func serve(ctx context.Context, cfg config.Config) error {
 	router.Mount("/sync", sync.Routes(mods.sync, auth))
 	router.Mount("/messaging", messaging.Routes(mods.messaging, auth))
 	router.Mount("/community", community.Routes(mods.community, auth))
+	router.Mount("/library", library.Routes(pool, auth))
 	router.Mount("/workspace", workspace.Routes(pool, auth))
 	router.Mount("/users", identity.DirectoryRoutes(mods.identity, auth))
 
 	slog.Info("pharmaboard API composed", "routes", []string{
-		"/v1/auth", "/v1/users", "/v1/notices", "/v1/admin", "/v1/sync", "/v1/messaging", "/v1/community", "/v1/workspace",
+		"/v1/auth", "/v1/users", "/v1/notices", "/v1/admin", "/v1/sync", "/v1/messaging", "/v1/community", "/v1/workspace", "/v1/library",
 	})
 	return httpserver.Run(ctx, cfg, router, pool.Ping)
 }

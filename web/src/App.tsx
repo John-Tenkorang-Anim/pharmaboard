@@ -12,6 +12,9 @@ applyAppearance(readAppearance());
 const SettingsPage = lazy(() =>
   import("@/features/settings/SettingsPage").then((m) => ({ default: m.SettingsPage })),
 );
+const LibraryPage = lazy(() =>
+  import("@/features/workspace/LibraryPage").then((m) => ({ default: m.LibraryPage })),
+);
 const HomePage = lazy(() =>
   import("@/features/community/HomePage").then((m) => ({ default: m.HomePage })),
 );
@@ -65,6 +68,14 @@ export function App() {
   return (
     <Suspense fallback={<RouteFallback />}>
       <Routes>
+        <Route
+          path="/library"
+          element={
+            <RequireAuth>
+              <LibraryPage />
+            </RequireAuth>
+          }
+        />
         <Route
           path="/settings"
           element={

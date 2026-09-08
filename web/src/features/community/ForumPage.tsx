@@ -1,3 +1,4 @@
+import { RichTextEditor } from "@/components/ui/RichText";
 import { platform } from "@/lib/platform";
 import { useState, useEffect, type FormEvent } from "react";
 import { Link } from "react-router-dom";
@@ -11,7 +12,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { Modal } from "@/components/ui/Modal";
-import { TextInput, TextArea } from "@/components/ui/Field";
+import { TextInput } from "@/components/ui/Field";
 import { formatRelative } from "@/lib/format";
 import { useCreateThread, useThreads } from "./api";
 
@@ -43,7 +44,7 @@ function AskModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Ask the profession">
+    <Modal open={open} onClose={onClose} title="Start a study discussion">
       <form onSubmit={submit} className="space-y-4">
         <TextInput
           id="title"
@@ -55,14 +56,33 @@ function AskModal({ open, onClose }: { open: boolean; onClose: () => void }) {
           maxLength={200}
           required
         />
-        <TextArea
-          id="body"
-          label="Details"
-          rows={6}
-          placeholder="Give enough context for a colleague to answer well."
+        <div className="flex flex-wrap gap-2">
+          {["Concept explanation", "Study group", "Research discussion"].map((kind) => (
+            <button
+              key={kind}
+              type="button"
+              className="rounded-full bg-blue-50 px-3 py-2 text-xs text-blue-800"
+              onClick={() => {
+                if (!body.trim())
+                  setBody(
+                    kind === "Concept explanation"
+                      ? "# What I am studying\n\n# What I understand so far\n\n# My question\n"
+                      : kind === "Study group"
+                        ? "# Study topic\n\n# Learning objectives\n\n# Plan and availability\n"
+                        : "# Research question\n\n# Source or article URL\n\n# Points for discussion\n",
+                  );
+                setTags(kind.toLowerCase().replaceAll(" ", "-"));
+              }}
+            >
+              {kind}
+            </button>
+          ))}
+        </div>
+        <RichTextEditor
+          label="Discussion details"
+          placeholder="Set out what you're studying and where you'd like input…"
           value={body}
-          onChange={(e) => setBody(e.target.value)}
-          required
+          onChange={setBody}
         />
         <TextInput
           id="tags"
@@ -82,7 +102,7 @@ function AskModal({ open, onClose }: { open: boolean; onClose: () => void }) {
             Cancel
           </Button>
           <Button type="submit" loading={createThread.isPending}>
-            Post question
+            Publish discussion
           </Button>
         </div>
       </form>
@@ -94,6 +114,7 @@ export function ForumPage() {
   const [search, setSearch] = useState("");
   const [askOpen, setAskOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [topic, setTopic] = useState("");
   const [filter, setFilter] = useState("all");
   useEffect(() => {
     const timer = setTimeout(() => setQuery(search), 250);
@@ -101,7 +122,9 @@ export function ForumPage() {
   }, [search]);
   const { data, isLoading, error } = useThreads(query);
   const threads = (data?.items ?? []).filter(
-    (t) => filter === "all" || (filter === "answered" ? t.has_accepted : t.reply_count === 0),
+    (t) =>
+      (!topic || t.tags.includes(topic)) &&
+      (filter === "all" || (filter === "answered" ? t.has_accepted : t.reply_count === 0)),
   );
 
   return (
@@ -109,16 +132,16 @@ export function ForumPage() {
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-accent-700">
-            Knowledge shared, practice improved
+            THE STUDY ROOM
           </p>
           <h1 className="text-3xl font-semibold tracking-tight text-ink">{platform.forumName}</h1>
           <p className="mt-1 text-sm text-faint">
-            Ask a thoughtful question. Share your experience. Learn with your colleagues.
+            Work through concepts, compare research, and prepare together.
           </p>
         </div>
         <Button onClick={() => setAskOpen(true)}>
           <Plus className="size-4" />
-          Ask a question
+          Start discussion
         </Button>
       </div>
 
@@ -151,6 +174,18 @@ export function ForumPage() {
             />
           </div>
 
+          <div className="mb-5 flex flex-wrap gap-2" aria-label="Discussion topics">
+            {["", ...new Set((data?.items ?? []).flatMap((t) => t.tags))].map((t) => (
+              <button
+                key={t}
+                aria-pressed={topic === t}
+                onClick={() => setTopic(t)}
+                className={`rounded-full px-3 py-2 text-xs ${topic === t ? "bg-blue-100 text-blue-900" : "bg-white text-muted"}`}
+              >
+                {t || "All topics"}
+              </button>
+            ))}
+          </div>
           <ErrorBanner error={error} />
 
           {isLoading ? (
@@ -170,6 +205,7 @@ export function ForumPage() {
                   <div className="px-4 py-3.5">
                     <div className="flex items-start gap-3">
                       <Avatar
+                        userId={thread.author.id}
                         name={thread.author.display_name}
                         size="sm"
                         verification={thread.author.verification_state}
@@ -187,7 +223,7 @@ export function ForumPage() {
                           )}
                         </div>
                         <p className="mt-1 line-clamp-2 text-[0.8125rem] leading-relaxed text-faint">
-                          {thread.body}
+                          {thread.body.replace(/[#*=]/g, "")}
                         </p>
                         <div className="mt-2.5 flex flex-wrap items-center gap-2">
                           {thread.tags.map((tag) => (
@@ -214,14 +250,27 @@ export function ForumPage() {
             <Card>
               <EmptyState
                 icon={<MessagesSquare className="size-6" />}
-                title={search ? "No questions match that search" : "No questions yet"}
+                title={
+                  search || topic || filter !== "all"
+                    ? "No discussions match these filters"
+                    : "Start the first study discussion"
+                }
                 description="Ask the first question and colleagues can answer it."
-                action={<Button onClick={() => setAskOpen(true)}>Ask a question</Button>}
+                action={<Button onClick={() => setAskOpen(true)}>Start discussion</Button>}
               />
             </Card>
           )}
         </section>
         <aside className="space-y-6">
+          <section className="social-card p-5">
+            <h2 className="font-semibold">Your study library</h2>
+            <p className="mt-2 text-sm leading-6 text-muted">
+              Keep books, articles and useful references together for your next discussion.
+            </p>
+            <Link className="mt-4 inline-block text-sm font-medium text-accent-700" to="/library">
+              Open my library →
+            </Link>
+          </section>
           <section className="rounded-xl bg-slate-50 p-5">
             <MessagesSquare className="mb-4 size-5 text-accent-700" />
             <h2 className="font-semibold">Good questions start here</h2>

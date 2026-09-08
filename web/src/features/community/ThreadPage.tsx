@@ -10,7 +10,7 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Badge";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { TextArea } from "@/components/ui/Field";
+import { RichText, RichTextEditor } from "@/components/ui/RichText";
 import { formatRelative } from "@/lib/format";
 import { useAuth } from "@/features/auth/AuthContext";
 import { useAcceptReply, useReply, useThread } from "./api";
@@ -75,6 +75,7 @@ export function ThreadPage() {
         <CardBody>
           <div className="flex items-start gap-3">
             <Avatar
+              userId={thread.author.id}
               name={thread.author.display_name}
               size="md"
               verification={thread.author.verification_state}
@@ -88,9 +89,9 @@ export function ThreadPage() {
                 {" · "}
                 {formatRelative(thread.created_at)}
               </p>
-              <p className="mt-3 whitespace-pre-wrap text-[0.9375rem] leading-relaxed text-ink">
-                {thread.body}
-              </p>
+              <div className="mt-5">
+                <RichText text={thread.body} />
+              </div>
               {thread.tags.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {thread.tags.map((tag) => (
@@ -128,6 +129,7 @@ export function ThreadPage() {
               )}
               <div className="flex items-start gap-3">
                 <Avatar
+                  userId={r.author.id}
                   name={r.author.display_name}
                   size="sm"
                   verification={r.author.verification_state}
@@ -144,9 +146,9 @@ export function ThreadPage() {
                       {formatRelative(r.created_at)}
                     </span>
                   </p>
-                  <p className="mt-1.5 whitespace-pre-wrap text-[0.9375rem] leading-relaxed text-ink">
-                    {r.body}
-                  </p>
+                  <div className="mt-3">
+                    <RichText text={r.body} />
+                  </div>
                   <div className="mt-3 flex items-center gap-3">
                     <span className="flex items-center gap-1.5 text-[0.8125rem] text-faint">
                       <Heart className="size-3.5" />
@@ -172,15 +174,15 @@ export function ThreadPage() {
       <Card>
         <CardBody>
           <form onSubmit={submit} className="space-y-3">
-            <TextArea
-              id="reply"
-              label="Your answer"
-              rows={4}
-              placeholder="Answer from your own practice experience."
+            <RichTextEditor
+              label="Contribute to this discussion"
+              placeholder="Answer from your own practice or study experience…"
               value={body}
-              onChange={(e) => setBody(e.target.value)}
-              required
+              onChange={setBody}
             />
+            <p className="text-xs text-muted">
+              Explain your reasoning and include source URLs so others can study further.
+            </p>
             <ErrorBanner error={reply.error} />
             <div className="flex justify-end">
               <Button type="submit" loading={reply.isPending} disabled={!body.trim()}>

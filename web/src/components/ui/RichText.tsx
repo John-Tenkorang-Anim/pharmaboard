@@ -43,8 +43,12 @@ export function RichText({ text }: { text: string }) {
 export function RichTextEditor({
   value,
   onChange,
+  label = "Notice body",
+  placeholder = "Write your notice…",
 }: {
   value: string;
+  label?: string;
+  placeholder?: string;
   onChange: (value: string) => void;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -64,7 +68,7 @@ export function RichTextEditor({
   return (
     <div>
       <label htmlFor="notice-body" className="mb-2 block text-sm font-medium">
-        Notice body
+        {label}
       </label>
       <div className="overflow-hidden rounded-lg border border-divider bg-white">
         <div
@@ -113,7 +117,7 @@ export function RichTextEditor({
             required
             maxLength={20000}
             className="block w-full resize-y p-4 text-sm leading-7 outline-none"
-            placeholder="Write your notice…"
+            placeholder={placeholder}
           />
         )}
       </div>
