@@ -336,23 +336,25 @@ export function HomePage() {
         />
       )}
       <div className="my-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex gap-1 rounded-lg bg-slate-50 p-1">
-          {[
-            { key: "community", label: "Discover", icon: Users },
-            { key: "following", label: "Following", icon: Users },
-            { key: "communities", label: "Communities", icon: Hash },
-            { key: "notices", label: "Official notices", icon: Bell },
-          ].map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => setTab(key as typeof tab)}
-              aria-pressed={tab === key}
-              className={`flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold ${tab === key ? "bg-white text-accent-700 shadow-sm" : "text-muted"}`}
-            >
-              <Icon size={14} />
-              {label}
-            </button>
-          ))}
+        <div className="scrollbar-thin min-w-0 flex-1 overflow-x-auto">
+          <div className="flex w-max gap-1 rounded-lg bg-slate-50 p-1">
+            {[
+              { key: "community", label: "Discover", icon: Users },
+              { key: "following", label: "Following", icon: Users },
+              { key: "communities", label: "Communities", icon: Hash },
+              { key: "notices", label: "Official notices", icon: Bell },
+            ].map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                onClick={() => setTab(key as typeof tab)}
+                aria-pressed={tab === key}
+                className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-xs font-semibold ${tab === key ? "bg-white text-accent-700 shadow-sm" : "text-muted"}`}
+              >
+                <Icon size={14} />
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
         {tab === "notices" && (
           <Link to="/notices" className="text-xs font-semibold text-accent-700">
