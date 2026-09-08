@@ -83,9 +83,6 @@ export function ProfilePhotoEditor({ userId }: { userId: string }) {
           Remove photo
         </button>
       </div>
-      <p className="mt-2 text-xs text-muted">
-        JPEG or PNG · Your photo is cropped to a square and visible to signed-in members.
-      </p>
       {error && (
         <p role="alert" className="mt-2 text-sm text-red-700">
           {error}

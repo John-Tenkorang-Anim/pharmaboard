@@ -113,9 +113,12 @@
   }
 }
 
-/* White is an explicit surface requirement, independent of theme cache. */
-html, body, #root { background-color: #ffffff; }
-.bg-canvas { background-color: #ffffff; }
+/* A tinted page canvas gives white posts and photos room to stand out. */
+:root { --canvas: 243 241 246; }
+html[data-palette="ocean"] { --canvas: 237 242 247; }
+html[data-palette="sunset"] { --canvas: 247 239 235; }
+html, body, #root { background-color: rgb(var(--canvas)); }
+.bg-canvas { background-color: rgb(var(--canvas)); }
 
 @layer components {
   .social-card { @apply rounded-2xl border border-slate-200/80 bg-white; box-shadow: 0 2px 8px rgb(20 35 55 / 0.035); }
@@ -126,8 +129,8 @@ html, body, #root { background-color: #ffffff; }
 :root { --accent: 109 60 220; --accent-dark: 83 38 177; --accent-soft: 245 240 255; --app-font: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif; }
 body, button, input, textarea, select { font-family: var(--app-font); }
 .social-nav-item > svg { width: 21px; height: 21px; flex-shrink: 0; }
-.social-nav-item[aria-current="page"] { background: #f1f3f5; color: #20252b; font-weight: 700; }
-.social-card { border-radius: 10px; border-color: #e3e6e9; box-shadow: none; }
+.social-nav-item[aria-current="page"] { background: rgb(var(--accent-soft)); color: rgb(var(--accent-dark)); font-weight: 700; }
+.social-card { border-radius: 10px; border-color: rgb(35 28 55 / .08); box-shadow: 0 2px 3px rgb(35 28 55 / .025); }
 .social-topbar { border-bottom: 1px solid #eef0f2; }
 .social-action:hover { background: #f3f5f7; }
 .preview-cover { background: rgb(var(--accent)); }

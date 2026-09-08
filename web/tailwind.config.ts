@@ -10,7 +10,7 @@ export default {
         serif: ["var(--app-font)"],
       },
       colors: {
-        canvas: "#FFFFFF",
+        canvas: "rgb(var(--canvas) / <alpha-value>)",
         surface: "#FFFFFF",
         ink: "#20252B",
         muted: "#5D6672",
