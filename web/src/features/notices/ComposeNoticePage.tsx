@@ -1,8 +1,10 @@
+import { RichTextEditor } from "@/components/ui/RichText";
+import { MediaPicker } from "@/features/media/Media";
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { AppShell } from "@/components/layout/AppShell";
-import { TextInput, TextArea, Select } from "@/components/ui/Field";
+import { TextInput, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { SeverityChip } from "@/components/ui/Badge";
@@ -19,6 +21,8 @@ export function ComposeNoticePage() {
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [media, setMedia] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [severity, setSeverity] = useState<NoticeSeverity>("advisory");
   const [audienceMode, setAudienceMode] = useState<AudienceMode>("all_verified");
   const [accountKind, setAccountKind] = useState("");
@@ -27,22 +31,27 @@ export function ComposeNoticePage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    const audience_rule: AudienceRule =
-      audienceMode === "all_verified"
-        ? { all_verified: true }
-        : {
-            ...(accountKind ? { account_kind: accountKind } : {}),
-            ...(regionCode ? { region_code: regionCode } : {}),
-            ...(practiceArea ? { practice_area: practiceArea } : {}),
-          };
+    if (uploading) return;
+    try {
+      const audience_rule: AudienceRule =
+        audienceMode === "all_verified"
+          ? { all_verified: true }
+          : {
+              ...(accountKind ? { account_kind: accountKind } : {}),
+              ...(regionCode ? { region_code: regionCode } : {}),
+              ...(practiceArea ? { practice_area: practiceArea } : {}),
+            };
 
-    const notice = await createNotice.mutateAsync({
-      title,
-      body_markdown: body,
-      severity,
-      audience_rule,
-    });
-    navigate(`/notices/${notice.id}`);
+      const notice = await createNotice.mutateAsync({
+        title,
+        body_markdown: [body, ...media.map((id) => `[media:${id}]`)].join("\n"),
+        severity,
+        audience_rule,
+      });
+      navigate(`/notices/${notice.id}`);
+    } catch {
+      /* Keep the draft; mutation error is displayed below. */
+    }
   }
 
   return (
@@ -70,16 +79,8 @@ export function ComposeNoticePage() {
               maxLength={200}
               required
             />
-            <TextArea
-              id="body"
-              label="Body"
-              rows={10}
-              placeholder="Set out the guidance in full. This text is what recipients will read."
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              className="text-[1rem] leading-[1.7]"
-              required
-            />
+            <RichTextEditor value={body} onChange={setBody} />
+            <MediaPicker value={media} onChange={setMedia} onBusy={setUploading} />
           </div>
         </section>
 
@@ -174,7 +175,7 @@ export function ComposeNoticePage() {
           <Button type="button" variant="quiet" onClick={() => navigate(-1)}>
             Discard
           </Button>
-          <Button type="submit" loading={createNotice.isPending}>
+          <Button type="submit" loading={createNotice.isPending} disabled={uploading}>
             Save draft
           </Button>
         </div>

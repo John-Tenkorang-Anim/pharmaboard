@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -16,6 +17,7 @@ import (
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/admin"
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/community"
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/identity"
+	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/media"
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/messaging"
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/notices"
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/sync"
@@ -110,6 +112,26 @@ func serve(ctx context.Context, cfg config.Config) error {
 	auth := identity.RequireAuth(mods.identity)
 
 	router := chi.NewRouter()
+	router.Mount("/media", media.Routes(pool, auth, func(ctx context.Context, viewer uuid.UUID, kind string, id uuid.UUID) (uuid.UUID, string, error) {
+		if kind == "post" {
+			p, err := mods.community.PostDetail(ctx, viewer, id)
+			return p.AuthorID, p.Body, err
+		}
+		if kind == "notice" {
+			n, err := mods.notices.Get(ctx, id)
+			if err != nil {
+				return uuid.Nil, "", err
+			}
+			if n.PublisherID != viewer && string(n.State) != "published" {
+				allowed, err := mods.admin.HasRole(ctx, viewer, admin.RolePublisherAdmin)
+				if err != nil || !allowed {
+					return uuid.Nil, "", fmt.Errorf("not available")
+				}
+			}
+			return n.PublisherID, n.BodyMarkdown, nil
+		}
+		return uuid.Nil, "", fmt.Errorf("unknown source")
+	}))
 	router.Mount("/auth", identity.Routes(mods.identity))
 	router.Mount("/notices", notices.Routes(mods.notices, auth))
 	router.Mount("/admin", admin.Routes(mods.admin, auth))

@@ -1,3 +1,4 @@
+import { MediaPicker } from "@/features/media/Media";
 import { platform } from "@/lib/platform";
 import { useState, useEffect, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -30,12 +31,15 @@ export function PostComposer({ scope = "everyone" }: { scope?: FeedScope }) {
   const { user } = useAuth();
   const create = useCreatePost(scope);
   const [body, setBody] = useState("");
+  const [media, setMedia] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [open, setOpen] = useState(false);
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!body.trim()) return;
+    if ((!body.trim() && !media.length) || uploading) return;
     try {
-      await create.mutateAsync(body);
+      await create.mutateAsync([body, ...media.map((id) => `[media:${id}]`)].join("\n"));
+      setMedia([]);
       setBody("");
       setOpen(false);
     } catch {
@@ -51,19 +55,30 @@ export function PostComposer({ scope = "everyone" }: { scope?: FeedScope }) {
             aria-label="Create a post"
             onFocus={() => setOpen(true)}
             value={body}
-            maxLength={4000}
+            maxLength={3800}
             onChange={(e) => setBody(e.target.value)}
             rows={open ? 4 : 1}
             placeholder="What’s on your mind?"
             className="min-w-0 flex-1 resize-none rounded-xl bg-[#F6F7F9] px-4 py-3 text-sm leading-6 placeholder:text-muted focus:outline-none"
           />
         </div>
-        {open ? (
+        <MediaPicker
+          value={media}
+          onChange={(v) => {
+            setMedia(v);
+            setOpen(true);
+          }}
+          onBusy={setUploading}
+        />
+        {open || media.length ? (
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <p className="text-xs text-muted">
               Share an idea, experience, or useful link. No patient information.
             </p>
-            <Button loading={create.isPending} disabled={!body.trim()}>
+            <Button
+              loading={create.isPending}
+              disabled={(!body.trim() && !media.length) || uploading}
+            >
               <PenLine size={14} />
               Publish post
             </Button>

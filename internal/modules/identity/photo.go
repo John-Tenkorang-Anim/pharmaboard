@@ -16,7 +16,7 @@ import (
 
 // Photos are bounded, normalized JPEGs persisted in PostgreSQL, so free
 // hosting restarts do not lose them. Decoding and re-encoding removes metadata.
-func photoUpload(s *Service) http.HandlerFunc {
+func photoUpload(s *Service, cover ...bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, ok := UserFromContext(r.Context())
 		if !ok {
@@ -54,21 +54,29 @@ func photoUpload(s *Service) http.HandlerFunc {
 			}
 			encoded = "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(output.Bytes())
 		}
-		if err := s.repo.SavePhoto(r.Context(), user.ID, encoded); err != nil {
+		save := s.repo.SavePhoto
+		if len(cover) > 0 && cover[0] {
+			save = s.repo.SaveCover
+		}
+		if err := save(r.Context(), user.ID, encoded); err != nil {
 			problem.Internal(w, "Photo could not be saved")
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]string{"image": encoded})
 	}
 }
-func photoRead(s *Service) http.HandlerFunc {
+func photoRead(s *Service, cover ...bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "id"))
 		if err != nil {
 			problem.BadRequest(w, "invalid_id", "Invalid member")
 			return
 		}
-		photo, err := s.repo.ReadPhoto(r.Context(), id)
+		read := s.repo.ReadPhoto
+		if len(cover) > 0 && cover[0] {
+			read = s.repo.ReadCover
+		}
+		photo, err := read(r.Context(), id)
 		if err != nil {
 			problem.NotFound(w, "Member not found")
 			return
@@ -85,5 +93,15 @@ func (r *PostgresRepository) SavePhoto(ctx context.Context, id uuid.UUID, photo 
 func (r *PostgresRepository) ReadPhoto(ctx context.Context, id uuid.UUID) (string, error) {
 	var photo string
 	err := r.pool.QueryRow(ctx, `SELECT COALESCE(avatar_object_key,'') FROM users WHERE id=$1 AND deleted_at IS NULL`, id).Scan(&photo)
+	return photo, err
+}
+
+func (r *PostgresRepository) SaveCover(ctx context.Context, id uuid.UUID, photo string) error {
+	_, err := r.pool.Exec(ctx, `UPDATE users SET cover_image=NULLIF($2,''),updated_at=now(),version=version+1 WHERE id=$1 AND deleted_at IS NULL`, id, photo)
+	return err
+}
+func (r *PostgresRepository) ReadCover(ctx context.Context, id uuid.UUID) (string, error) {
+	var photo string
+	err := r.pool.QueryRow(ctx, `SELECT COALESCE(cover_image,'') FROM users WHERE id=$1 AND deleted_at IS NULL`, id).Scan(&photo)
 	return photo, err
 }

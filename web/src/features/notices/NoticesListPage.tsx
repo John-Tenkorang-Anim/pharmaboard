@@ -1,3 +1,4 @@
+import { withoutMedia } from "@/features/media/Media";
 import { platform } from "@/lib/platform";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -69,7 +70,9 @@ export function NoticesListPage() {
         .filter(
           (n) =>
             (priority === "all" || n.severity === priority) &&
-            `${n.title} ${n.body_markdown}`.toLowerCase().includes(search.toLowerCase().trim()),
+            `${n.title} ${withoutMedia(n.body_markdown).replace(/[#*=]/g, "")}`
+              .toLowerCase()
+              .includes(search.toLowerCase().trim()),
         )
         .sort(
           (a, b) =>
@@ -188,7 +191,7 @@ export function NoticesListPage() {
                       )}
                     </h2>
                     <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">
-                      {n.body_markdown}
+                      {withoutMedia(n.body_markdown).replace(/[#*=]/g, "")}
                     </p>
                     <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
                       <span className="flex items-center gap-2 text-xs text-faint">

@@ -1,3 +1,5 @@
+import { RichText } from "@/components/ui/RichText";
+import { MediaAttachments, withoutMedia } from "@/features/media/Media";
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
@@ -128,9 +130,10 @@ export function NoticeDetailPage() {
               : `Created ${formatRelative(notice.created_at)}`}
           </p>
 
-          <p className="mt-4 whitespace-pre-wrap text-[0.9375rem] leading-relaxed text-ink">
-            {notice.body_markdown}
-          </p>
+          <div className="mt-4">
+            <RichText text={withoutMedia(notice.body_markdown)} />
+            <MediaAttachments body={notice.body_markdown} source={notice.id} kind="notice" />
+          </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-hairline pt-4 text-[0.8125rem] text-faint">
             <span className="flex items-center gap-1.5">

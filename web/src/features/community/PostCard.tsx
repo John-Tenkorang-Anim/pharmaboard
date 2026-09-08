@@ -1,3 +1,4 @@
+import { MediaAttachments, withoutMedia } from "@/features/media/Media";
 import { useState, useRef, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -172,7 +173,8 @@ export function PostCard({ post }: { post: FeedPost }) {
         </button>
       </header>
       <div className="px-5 pb-4 pt-4">
-        <Body text={post.body} />
+        <Body text={withoutMedia(post.body)} />
+        <MediaAttachments body={post.body} source={post.id} kind="post" />
       </div>
       {video && (
         <div className="mx-5 mb-4 aspect-video overflow-hidden rounded-lg bg-slate-900">

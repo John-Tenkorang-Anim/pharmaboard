@@ -2,14 +2,16 @@ import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Camera } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-export function ProfilePhotoEditor({ userId }: { userId: string }) {
+export function ProfilePhotoEditor({ userId, cover = false }: { userId: string; cover?: boolean }) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const input = useRef<HTMLInputElement>(null);
   const client = useQueryClient();
   async function save(image: string) {
-    await apiFetch("/auth/photo", { method: "PUT", body: { image } });
-    await client.invalidateQueries({ queryKey: ["profile-photo", userId] });
+    await apiFetch(cover ? "/auth/cover" : "/auth/photo", { method: "PUT", body: { image } });
+    await client.invalidateQueries({
+      queryKey: [cover ? "profile-cover" : "profile-photo", userId],
+    });
   }
   async function upload(file?: File) {
     if (!file) return;
@@ -20,22 +22,25 @@ export function ProfilePhotoEditor({ userId }: { userId: string }) {
         throw new Error("Choose a JPEG or PNG under 10 MB.");
       const bitmap = await createImageBitmap(file);
       const canvas = document.createElement("canvas");
-      canvas.width = canvas.height = 512;
+      canvas.width = cover ? 1024 : 512;
+      canvas.height = cover ? 320 : 512;
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error("Image processing is unavailable.");
-      const side = Math.min(bitmap.width, bitmap.height);
+      const ratio = canvas.width / canvas.height;
+      const cropWidth = Math.min(bitmap.width, bitmap.height * ratio);
+      const cropHeight = cropWidth / ratio;
       ctx.fillStyle = "white";
-      ctx.fillRect(0, 0, 512, 512);
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(
         bitmap,
-        (bitmap.width - side) / 2,
-        (bitmap.height - side) / 2,
-        side,
-        side,
+        (bitmap.width - cropWidth) / 2,
+        (bitmap.height - cropHeight) / 2,
+        cropWidth,
+        cropHeight,
         0,
         0,
-        512,
-        512,
+        canvas.width,
+        canvas.height,
       );
       bitmap.close();
       await save(canvas.toDataURL("image/jpeg", 0.85).split(",")[1]!);
@@ -52,7 +57,7 @@ export function ProfilePhotoEditor({ userId }: { userId: string }) {
         ref={input}
         type="file"
         accept="image/jpeg,image/png"
-        aria-label="Choose profile photo"
+        aria-label={cover ? "Choose profile cover" : "Choose profile photo"}
         className="sr-only"
         onChange={(e) => upload(e.target.files?.[0])}
       />
@@ -63,7 +68,7 @@ export function ProfilePhotoEditor({ userId }: { userId: string }) {
           className="flex items-center gap-2 text-sm font-semibold text-accent-700"
         >
           <Camera size={16} />
-          {busy ? "Saving…" : "Add or change photo"}
+          {busy ? "Saving…" : cover ? "Change cover" : "Add or change photo"}
         </button>
         <button
           disabled={busy}
@@ -80,7 +85,7 @@ export function ProfilePhotoEditor({ userId }: { userId: string }) {
             }
           }}
         >
-          Remove photo
+          {cover ? "Remove cover" : "Remove photo"}
         </button>
       </div>
       {error && (

@@ -1,3 +1,4 @@
+import { LearningRoom } from "./LearningRoom";
 import { platform } from "@/lib/platform";
 import { useState, useEffect, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -309,6 +310,15 @@ export function WorkspacePage({ kind }: { kind: ResourceKind }) {
   const { save, remove } = useResourceActions();
   const items = data?.pages.flatMap((p) => p.items) ?? [];
   const active = selected ? (items.find((v) => v.id === selected.id) ?? selected) : null;
+  if (kind === "learning" && active)
+    return (
+      <LearningRoom
+        lesson={active}
+        lessons={items}
+        onSelect={setSelected}
+        onBack={() => setSelected(null)}
+      />
+    );
   return (
     <AppShell>
       <div className="workspace-heading">

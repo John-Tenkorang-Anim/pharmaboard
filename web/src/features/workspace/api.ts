@@ -56,7 +56,15 @@ export function useResourceActions() {
 export function youtubeId(url: string) {
   try {
     const u = new URL(url);
-    const id = u.hostname === "youtu.be" ? u.pathname.slice(1) : u.searchParams.get("v");
+    if (!["https:", "http:"].includes(u.protocol)) return null;
+    const host = u.hostname.toLowerCase().replace(/^www\./, "");
+    let id: string | null = null;
+    if (host === "youtu.be") id = u.pathname.split("/")[1] ?? null;
+    else if (["youtube.com", "m.youtube.com", "youtube-nocookie.com"].includes(host)) {
+      id = u.searchParams.get("v");
+      const parts = u.pathname.split("/");
+      if (["embed", "shorts", "live"].includes(parts[1] ?? "")) id = parts[2] ?? null;
+    }
     return id && /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null;
   } catch {
     return null;
