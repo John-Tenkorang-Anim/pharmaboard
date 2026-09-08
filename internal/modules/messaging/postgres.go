@@ -285,6 +285,7 @@ func (r *PostgresRepository) MarkReadThrough(ctx context.Context, conversationID
 		UPDATE message_receipts
 		SET delivered_at = COALESCE(delivered_at, now()), read_at = COALESCE(read_at, now())
 		WHERE user_id = $1
+		  AND EXISTS (SELECT 1 FROM messages WHERE id = $3 AND conversation_id = $2)
 		  AND message_id IN (SELECT id FROM messages WHERE conversation_id = $2 AND id <= $3)`,
 		userID, conversationID, throughMessageID)
 	if err != nil {

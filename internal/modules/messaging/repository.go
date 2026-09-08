@@ -8,6 +8,7 @@ import (
 
 // Repository is the persistence port for the messaging module.
 type Repository interface {
+	Unread(ctx context.Context, userID uuid.UUID) (UnreadSummary, error)
 	// CreateConversation inserts the conversation and all of
 	// participantIDs (including the creator) in one transaction.
 	CreateConversation(ctx context.Context, conv Conversation, participantIDs []uuid.UUID) error

@@ -118,3 +118,42 @@ export function useStartCall(conversationId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ["messages", conversationId, "poll"] }),
   });
 }
+
+export function useUnreadMessages() {
+  return useQuery({
+    queryKey: ["unread-messages"],
+    queryFn: () =>
+      apiFetch<{
+        count: number;
+        items: { conversation_id: string; count: number; title: string }[];
+      }>("/messaging/unread"),
+    refetchInterval: 4000,
+  });
+}
+export function useMarkMessagesRead(conversationId: string, throughMessageId?: string) {
+  const client = useQueryClient();
+  useEffect(() => {
+    if (!throughMessageId) return;
+    let active = true;
+    const mark = async () => {
+      if (document.visibilityState !== "visible" || !active) return;
+      try {
+        await apiFetch(`/messaging/conversations/${conversationId}/read`, {
+          method: "POST",
+          body: { through_message_id: throughMessageId },
+        });
+        if (active) client.invalidateQueries({ queryKey: ["unread-messages"] });
+      } catch {
+        /* Retry while the visible conversation remains open. */
+      }
+    };
+    void mark();
+    document.addEventListener("visibilitychange", mark);
+    const timer = window.setInterval(mark, 10000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", mark);
+    };
+  }, [conversationId, throughMessageId, client]);
+}

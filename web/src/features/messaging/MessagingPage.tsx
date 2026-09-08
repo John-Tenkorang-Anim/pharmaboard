@@ -23,6 +23,7 @@ import { useAuth } from "@/features/auth/AuthContext";
 import { formatRelative, formatTime } from "@/lib/format";
 import type { Conversation, Message } from "@/lib/types";
 import {
+  useMarkMessagesRead,
   useConversation,
   useConversations,
   useMessages,
@@ -150,6 +151,11 @@ function ThreadView({ conversationId }: { conversationId: string }) {
   const [search, setSearch] = useState("");
   const [room, setRoom] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const latest = messages.at(-1);
+  useMarkMessagesRead(
+    conversationId,
+    tab === "chat" && !search && latest?.conversation_id === conversationId ? latest.id : undefined,
+  );
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });

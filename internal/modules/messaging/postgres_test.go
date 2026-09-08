@@ -208,3 +208,49 @@ func TestStartCall_AnnouncesSystemMessageAndDisclosesProvider(t *testing.T) {
 		t.Fatal("expected a non-participant to be unable to end the call")
 	}
 }
+
+func TestUnreadMessagesArePrivateAndClearOnRead(t *testing.T) {
+	pool := testPool(t)
+	ctx := context.Background()
+	repo := messaging.NewPostgresRepository(pool)
+	svc := messaging.NewService(repo)
+	a, b, c := mustCreateUser(t, pool), mustCreateUser(t, pool), mustCreateUser(t, pool)
+	conv, err := svc.CreateConversation(ctx, a, []uuid.UUID{b}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	msg, err := svc.SendMessage(ctx, a, conv.ID, "Can you help with the discussion?")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []uuid.UUID{a, c} {
+		summary, err := repo.Unread(ctx, id)
+		if err != nil || summary.Count != 0 {
+			t.Fatalf("unexpected unread for %s: %+v %v", id, summary, err)
+		}
+	}
+	summary, err := repo.Unread(ctx, b)
+	if err != nil || summary.Count != 1 {
+		t.Fatalf("missing unread: %+v %v", summary, err)
+	}
+	if err := svc.MarkReadThrough(ctx, c, conv.ID, msg.ID); err == nil {
+		t.Fatal("outsider marked read")
+	}
+	if err := svc.MarkReadThrough(ctx, b, conv.ID, msg.ID); err != nil {
+		t.Fatal(err)
+	}
+	summary, err = repo.Unread(ctx, b)
+	if err != nil || summary.Count != 0 {
+		t.Fatalf("not cleared: %+v %v", summary, err)
+	}
+	if _, err := svc.SendMessage(ctx, a, conv.ID, "Another question"); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.Leave(ctx, conv.ID, b); err != nil {
+		t.Fatal(err)
+	}
+	summary, err = repo.Unread(ctx, b)
+	if err != nil || summary.Count != 0 {
+		t.Fatalf("left conversation shown: %+v %v", summary, err)
+	}
+}

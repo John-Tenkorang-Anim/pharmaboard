@@ -1,3 +1,4 @@
+import { useUnreadMessages } from "@/features/messaging/api";
 import { PlatformBrand } from "@/components/ui/PlatformBrand";
 import { platform } from "@/lib/platform";
 import { type ReactNode, useState, type FormEvent } from "react";
@@ -45,6 +46,8 @@ export function AppShell({
   width?: "wide" | "narrow";
 }) {
   const { user, logout } = useAuth();
+  const { data: unread } = useUnreadMessages();
+  const unreadCount = unread?.count ?? 0;
   const navigate = useNavigate();
   const location = useLocation();
   const [query, setQuery] = useState("");
@@ -132,6 +135,14 @@ export function AppShell({
             >
               <Icon size={18} />
               {label}
+              {to === "/messaging" && unreadCount > 0 && (
+                <span
+                  aria-label={`${unreadCount} unread messages`}
+                  className="ml-auto min-w-5 rounded-full bg-blue-600 px-1.5 py-0.5 text-center text-[11px] font-semibold tabular-nums text-white"
+                >
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
               {to === "learning" && (
                 <span className="ml-auto rounded bg-white px-1.5 py-0.5 text-[9px] font-semibold text-accent-700">
                   ACADEMY

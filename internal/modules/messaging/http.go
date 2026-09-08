@@ -21,6 +21,7 @@ import (
 func Routes(svc *Service, auth func(http.Handler) http.Handler) chi.Router {
 	r := chi.NewRouter()
 	r.Use(auth)
+	r.Get("/unread", unreadHandler(svc))
 
 	r.Route("/conversations", func(r chi.Router) {
 		r.Post("/", createConversationHandler(svc))

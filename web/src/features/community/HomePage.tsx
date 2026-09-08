@@ -1,3 +1,4 @@
+import { MessageNotifications } from "@/features/messaging/MessageNotifications";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -147,6 +148,7 @@ export function HomePage() {
           A little inspiration. A useful conversation. Your next step forward.
         </p>
       </header>
+      <MessageNotifications />
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
         {[
           {
