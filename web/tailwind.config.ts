@@ -5,9 +5,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["IBM Plex Sans", "-apple-system", "Segoe UI", "sans-serif"],
+        sans: ["var(--app-font)"],
         mono: ["IBM Plex Mono", "ui-monospace", "SFMono-Regular", "monospace"],
-        serif: ["IBM Plex Sans", "-apple-system", "Segoe UI", "sans-serif"],
+        serif: ["var(--app-font)"],
       },
       colors: {
         canvas: "#FFFFFF",
@@ -19,11 +19,11 @@ export default {
         divider: "#CED4DC",
 
         accent: {
-          50: "#EFF5FF",
+          50: "rgb(var(--accent-soft) / <alpha-value>)",
           100: "#DBEAFE",
           400: "#60A5FA",
-          600: "#2463D4",
-          700: "#1D4FA7",
+          600: "rgb(var(--accent) / <alpha-value>)",
+          700: "rgb(var(--accent-dark) / <alpha-value>)",
           900: "#182336",
         },
 

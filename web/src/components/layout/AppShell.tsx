@@ -6,6 +6,7 @@ import { NavLink, useNavigate, Link, useLocation } from "react-router-dom";
 import clsx from "clsx";
 import {
   Search,
+  Settings,
   LogOut,
   House,
   Users,
@@ -33,6 +34,7 @@ const navItems = [
   { to: "/network", label: "My network", icon: Users },
   { to: "/forum", label: platform.forumName, icon: MessageCircle },
   { to: "/jobs", label: "Careers", icon: BriefcaseBusiness },
+  { to: "/settings", label: "Settings", icon: Settings },
 ];
 export function AppShell({
   children,
@@ -92,7 +94,7 @@ export function AppShell({
       <aside
         id="workspace-navigation"
         className={clsx(
-          "fixed inset-y-0 left-0 z-50 flex w-60 flex-col border-r border-hairline bg-white transition-transform",
+          "social-sidebar fixed inset-y-0 left-0 z-50 flex w-60 flex-col border-r border-hairline bg-white transition-transform",
           mobile ? "translate-x-0" : "-translate-x-full",
           collapsed ? "lg:hidden" : "lg:translate-x-0",
         )}
@@ -115,7 +117,7 @@ export function AppShell({
         </div>
         <div className="px-6 pb-6 pt-3">
           <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted">
-            Your professional workspace
+            A world of possibilities
           </p>
         </div>
         <nav aria-label="Main navigation" className="flex-1 space-y-1 overflow-y-auto px-3">
@@ -126,9 +128,9 @@ export function AppShell({
               onClick={() => setMobile(false)}
               className={({ isActive }) =>
                 clsx(
-                  "flex items-center gap-3 rounded-lg px-3 py-3 text-[13px] font-medium transition-colors",
+                  "social-nav-item flex items-center gap-3 rounded-lg px-3 py-3 text-[13px] font-medium transition-colors",
                   isActive
-                    ? "bg-slate-50 text-accent-700"
+                    ? "bg-accent-50 text-accent-700"
                     : "text-muted hover:bg-canvas hover:text-ink",
                 )
               }
@@ -178,7 +180,7 @@ export function AppShell({
         </div>
       </aside>
       <div className={collapsed ? "" : "lg:pl-60"}>
-        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur">
+        <header className="social-topbar sticky top-0 z-30 bg-white/95 backdrop-blur">
           <div className="flex h-20 items-center gap-4 px-5 md:px-8">
             <button
               aria-label="Open navigation"
@@ -228,6 +230,7 @@ export function AppShell({
         )}
         <main
           id="main-content"
+          data-section={current?.to.slice(1)}
           className={clsx(
             "mx-auto px-5 py-8 md:px-8",
             width === "narrow" ? "max-w-4xl" : "max-w-[1440px]",

@@ -135,7 +135,7 @@ export function HomePage() {
   );
   return (
     <AppShell right={right}>
-      <header className="mb-7">
+      <header className="home-welcome mb-7">
         <p className="text-xs text-muted">
           {new Date().toLocaleDateString(undefined, {
             weekday: "long",
@@ -173,7 +173,7 @@ export function HomePage() {
           <Link
             key={to}
             to={to}
-            className="social-card group p-4 transition-shadow hover:shadow-md"
+            className="discovery-tile social-card group p-4 transition-shadow hover:shadow-md"
           >
             <div className="mb-4 flex items-center justify-between">
               <Icon size={20} className="text-accent-600" />

@@ -1,3 +1,4 @@
+import { applyAppearance, readAppearance } from "@/lib/appearance";
 import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { RequireAuth } from "@/features/auth/RequireAuth";
@@ -7,6 +8,10 @@ import { LoginPage } from "@/features/auth/LoginPage";
 // it, so the initial bundle stays small as more features are added —
 // community/notices/messaging/admin are already independent enough that no
 // route needs another route's code up front.
+applyAppearance(readAppearance());
+const SettingsPage = lazy(() =>
+  import("@/features/settings/SettingsPage").then((m) => ({ default: m.SettingsPage })),
+);
 const HomePage = lazy(() =>
   import("@/features/community/HomePage").then((m) => ({ default: m.HomePage })),
 );
@@ -60,6 +65,14 @@ export function App() {
   return (
     <Suspense fallback={<RouteFallback />}>
       <Routes>
+        <Route
+          path="/settings"
+          element={
+            <RequireAuth>
+              <SettingsPage />
+            </RequireAuth>
+          }
+        />
         {(["learning", "jobs", "sessions"] as const).map((kind) => (
           <Route
             key={kind}
