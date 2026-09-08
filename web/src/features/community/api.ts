@@ -1,10 +1,10 @@
 import { useMutation, useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import type {
+  Community,
   DirectoryResponse,
   FeedPost,
   FeedResponse,
-  ForumChannel,
   ForumThreadSummary,
   ProfileView,
   ThreadDetail,
@@ -22,8 +22,8 @@ export function useFeed(scope: FeedScope) {
 export function useCreatePost(scope: FeedScope) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: string) =>
-      apiFetch<FeedPost>("/community/feed", { method: "POST", body: { body } }),
+    mutationFn: (input: { body: string; channel_id?: string }) =>
+      apiFetch<FeedPost>("/community/feed", { method: "POST", body: input }),
     // The new post appears in the feed immediately rather than after a
     // refetch round-trip — the difference between "app" and "web form".
     onSuccess: (post) => {
@@ -32,6 +32,7 @@ export function useCreatePost(scope: FeedScope) {
       );
       queryClient.invalidateQueries({ queryKey: ["feed"] });
       queryClient.invalidateQueries({ queryKey: ["community-feed"] });
+      queryClient.invalidateQueries({ queryKey: ["channels"] });
     },
   });
 }
@@ -138,7 +139,7 @@ export function useThreads(search: string, channelId?: string) {
 export function useChannels() {
   return useQuery({
     queryKey: ["channels"],
-    queryFn: () => apiFetch<{ items: ForumChannel[] }>("/community/channels"),
+    queryFn: () => apiFetch<{ items: Community[] }>("/community/channels"),
   });
 }
 
@@ -146,8 +147,45 @@ export function useCreateChannel() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: { name: string; description: string }) =>
-      apiFetch<ForumChannel>("/community/channels", { method: "POST", body: input }),
+      apiFetch<Community>("/community/channels", { method: "POST", body: input }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["channels"] }),
+  });
+}
+
+// useSetChannelMembership joins or leaves a community — "communities you're
+// part of" — optimistically, the same immediate-feedback convention as
+// useSetReaction/useSetFollow.
+export function useSetChannelMembership() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ channelId, on }: { channelId: string; on: boolean }) =>
+      apiFetch(`/community/channels/${channelId}/membership`, { method: on ? "PUT" : "DELETE" }),
+    onMutate: async ({ channelId, on }) => {
+      const key = ["channels"];
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData<{ items: Community[] }>(key);
+      queryClient.setQueryData<{ items: Community[] }>(key, (prev) =>
+        prev
+          ? {
+              ...prev,
+              items: prev.items.map((c) =>
+                c.id === channelId
+                  ? {
+                      ...c,
+                      viewer_member: on,
+                      member_count: Math.max(0, c.member_count + (on ? 1 : -1)),
+                    }
+                  : c,
+              ),
+            }
+          : prev,
+      );
+      return { previous, key };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(context.key, context.previous);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["channels"] }),
   });
 }
 
@@ -195,13 +233,13 @@ export function useAcceptReply(threadId: string | undefined) {
   });
 }
 
-export function useCommunityFeed(scope: FeedScope, search = "") {
+export function useCommunityFeed(scope: FeedScope, search = "", channelId?: string) {
   return useInfiniteQuery({
-    queryKey: ["community-feed", scope, search],
+    queryKey: ["community-feed", scope, search, channelId ?? ""],
     initialPageParam: "",
     queryFn: ({ pageParam }) =>
       apiFetch<FeedResponse>(
-        `/community/feed?scope=${scope}&q=${encodeURIComponent(search)}&limit=20${pageParam ? `&before=${pageParam}` : ""}`,
+        `/community/feed?scope=${scope}&q=${encodeURIComponent(search)}&limit=20${channelId ? `&channel_id=${channelId}` : ""}${pageParam ? `&before=${pageParam}` : ""}`,
       ),
     getNextPageParam: (last) => (last.items.length === 20 ? last.next_cursor : undefined),
   });

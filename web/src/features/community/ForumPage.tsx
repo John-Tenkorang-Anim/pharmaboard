@@ -14,7 +14,7 @@ import { SkeletonList } from "@/components/ui/Skeleton";
 import { Modal } from "@/components/ui/Modal";
 import { TextInput, TextArea } from "@/components/ui/Field";
 import { formatRelative } from "@/lib/format";
-import type { ForumChannel } from "@/lib/types";
+import type { Community } from "@/lib/types";
 import { useChannels, useCreateChannel, useCreateThread, useThreads } from "./api";
 
 function AskModal({
@@ -25,7 +25,7 @@ function AskModal({
 }: {
   open: boolean;
   onClose: () => void;
-  channels: ForumChannel[];
+  channels: Community[];
   defaultChannelId: string;
 }) {
   const createThread = useCreateThread();
@@ -458,7 +458,7 @@ export function ForumPage() {
               Share your experience, link to guidance where helpful, and keep identifiable patient
               details out of discussions. Question authors can mark an answer as accepted.
             </p>
-            <Link to="/community" className="mt-4 inline-block text-sm font-medium text-accent-700">
+            <Link to="/home" className="mt-4 inline-block text-sm font-medium text-accent-700">
               Explore Community ↗
             </Link>
           </section>

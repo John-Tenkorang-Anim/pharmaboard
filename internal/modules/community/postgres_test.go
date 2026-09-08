@@ -85,7 +85,7 @@ func TestReactionCountMatchesRows(t *testing.T) {
 	author := mustCreateUser(t, pool)
 	reactor := mustCreateUser(t, pool)
 
-	post, err := svc.CreatePost(ctx, author, "A post to react to.")
+	post, err := svc.CreatePost(ctx, author, "A post to react to.", nil)
 	if err != nil {
 		t.Fatalf("create post: %v", err)
 	}
@@ -122,11 +122,11 @@ func TestFollowingFeedExcludesStrangers(t *testing.T) {
 	followed := mustCreateUser(t, pool)
 	stranger := mustCreateUser(t, pool)
 
-	followedPost, err := svc.CreatePost(ctx, followed, "From someone the viewer follows.")
+	followedPost, err := svc.CreatePost(ctx, followed, "From someone the viewer follows.", nil)
 	if err != nil {
 		t.Fatalf("create followed post: %v", err)
 	}
-	strangerPost, err := svc.CreatePost(ctx, stranger, "From someone the viewer does not follow.")
+	strangerPost, err := svc.CreatePost(ctx, stranger, "From someone the viewer does not follow.", nil)
 	if err != nil {
 		t.Fatalf("create stranger post: %v", err)
 	}
@@ -134,7 +134,7 @@ func TestFollowingFeedExcludesStrangers(t *testing.T) {
 		t.Fatalf("follow: %v", err)
 	}
 
-	feed, err := svc.Feed(ctx, viewer, community.ScopeFollowing, uuid.Nil, 100)
+	feed, err := svc.Feed(ctx, viewer, community.ScopeFollowing, nil, uuid.Nil, 100)
 	if err != nil {
 		t.Fatalf("feed: %v", err)
 	}
@@ -236,11 +236,11 @@ func TestPostCommentThreadIntegrity(t *testing.T) {
 	svc := newService(pool)
 	author := mustCreateUser(t, pool)
 	peer := mustCreateUser(t, pool)
-	post, err := svc.CreatePost(ctx, author, "Comment integrity test")
+	post, err := svc.CreatePost(ctx, author, "Comment integrity test", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	other, err := svc.CreatePost(ctx, author, "Other post for isolation test")
+	other, err := svc.CreatePost(ctx, author, "Other post for isolation test", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -354,7 +354,7 @@ func TestChannels_CreateListAndFilter(t *testing.T) {
 		t.Fatalf("expected a fresh channel to start with no threads, got %d", channel.ThreadCount)
 	}
 
-	channels, err := svc.Channels(ctx)
+	channels, err := svc.Channels(ctx, creator)
 	if err != nil {
 		t.Fatalf("list channels: %v", err)
 	}
@@ -422,4 +422,126 @@ func TestCreateThread_UnknownChannelRejected(t *testing.T) {
 	if !errors.Is(err, community.ErrValidation) {
 		t.Fatalf("expected ErrValidation for an unknown channel, got %v", err)
 	}
+}
+
+// TestFeed_FilteredByChannel guards the same channel-scoping the forum
+// already has, now extended to posts — a "community" in the feed sense.
+func TestFeed_FilteredByChannel(t *testing.T) {
+	pool := testPool(t)
+	ctx := context.Background()
+	svc := newService(pool)
+
+	author := mustCreateUser(t, pool)
+	unique := strings.ReplaceAll(uuid.NewString(), "-", "")[:8]
+	channel, err := svc.CreateChannel(ctx, author, "Feed Channel "+unique, "")
+	if err != nil {
+		t.Fatalf("create channel: %v", err)
+	}
+
+	inChannel, err := svc.CreatePost(ctx, author, "A post inside the channel.", &channel.ID)
+	if err != nil {
+		t.Fatalf("create post in channel: %v", err)
+	}
+	outsideChannel, err := svc.CreatePost(ctx, author, "A post outside the channel.", nil)
+	if err != nil {
+		t.Fatalf("create post outside channel: %v", err)
+	}
+
+	filtered, err := svc.Feed(ctx, author, community.ScopeEveryone, &channel.ID, uuid.Nil, 50)
+	if err != nil {
+		t.Fatalf("filtered feed: %v", err)
+	}
+	var sawInChannel, sawOutside bool
+	for _, p := range filtered {
+		if p.ID == inChannel.ID {
+			sawInChannel = true
+		}
+		if p.ID == outsideChannel.ID {
+			sawOutside = true
+		}
+	}
+	if !sawInChannel {
+		t.Error("channel-filtered feed omitted a post that belongs to the channel")
+	}
+	if sawOutside {
+		t.Error("channel-filtered feed included a post that does not belong to the channel")
+	}
+}
+
+// TestChannelMembership_JoinLeave guards "communities you're part of":
+// joining and leaving are idempotent and reflected in the viewer_member
+// state that Channels() decorates each channel with.
+func TestChannelMembership_JoinLeave(t *testing.T) {
+	pool := testPool(t)
+	ctx := context.Background()
+	svc := newService(pool)
+
+	creator := mustCreateUser(t, pool)
+	member := mustCreateUser(t, pool)
+	unique := strings.ReplaceAll(uuid.NewString(), "-", "")[:8]
+	channel, err := svc.CreateChannel(ctx, creator, "Membership Channel "+unique, "")
+	if err != nil {
+		t.Fatalf("create channel: %v", err)
+	}
+
+	// The creator is auto-joined.
+	creatorViews, err := svc.Channels(ctx, creator)
+	if err != nil {
+		t.Fatalf("channels for creator: %v", err)
+	}
+	if !viewerMember(creatorViews, channel.ID) {
+		t.Fatal("channel creator was not auto-joined as a member")
+	}
+
+	memberViews, err := svc.Channels(ctx, member)
+	if err != nil {
+		t.Fatalf("channels for member: %v", err)
+	}
+	if viewerMember(memberViews, channel.ID) {
+		t.Fatal("a different user was already shown as a member before joining")
+	}
+
+	for i := 0; i < 2; i++ {
+		if err := svc.JoinChannel(ctx, channel.ID, member); err != nil {
+			t.Fatalf("join %d: %v", i, err)
+		}
+	}
+	memberViews, err = svc.Channels(ctx, member)
+	if err != nil {
+		t.Fatalf("channels after join: %v", err)
+	}
+	if !viewerMember(memberViews, channel.ID) {
+		t.Fatal("member was not reflected as joined after JoinChannel")
+	}
+	var memberCount int
+	for _, c := range memberViews {
+		if c.ID == channel.ID {
+			memberCount = c.MemberCount
+		}
+	}
+	if memberCount != 2 {
+		t.Fatalf("member_count=%d, want 2 (creator + joined member)", memberCount)
+	}
+
+	for i := 0; i < 2; i++ {
+		if err := svc.LeaveChannel(ctx, channel.ID, member); err != nil {
+			t.Fatalf("leave %d: %v", i, err)
+		}
+	}
+	memberViews, err = svc.Channels(ctx, member)
+	if err != nil {
+		t.Fatalf("channels after leave: %v", err)
+	}
+	if viewerMember(memberViews, channel.ID) {
+		t.Fatal("member was still shown as joined after LeaveChannel")
+	}
+}
+
+func viewerMember(views []community.ChannelView, id uuid.UUID) bool {
+	for _, c := range views {
+		if c.ID == id {
+			return c.ViewerMember
+		}
+	}
+	return false
 }

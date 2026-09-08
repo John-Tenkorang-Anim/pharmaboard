@@ -268,7 +268,7 @@ export function NoticesListPage() {
               {platform.forumName}.
             </p>
             <div className="mt-4 flex gap-4 text-sm font-medium text-accent-700">
-              <Link to="/community">Community ↗</Link>
+              <Link to="/home">Community ↗</Link>
               <Link to="/forum">{platform.forumName} ↗</Link>
             </div>
           </section>

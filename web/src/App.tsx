@@ -18,9 +18,6 @@ const LibraryPage = lazy(() =>
 const HomePage = lazy(() =>
   import("@/features/community/HomePage").then((m) => ({ default: m.HomePage })),
 );
-const CommunityPage = lazy(() =>
-  import("@/features/community/CommunityPage").then((m) => ({ default: m.CommunityPage })),
-);
 const PostPage = lazy(() =>
   import("@/features/community/CommunityPage").then((m) => ({ default: m.PostPage })),
 );
@@ -95,14 +92,9 @@ export function App() {
             }
           />
         ))}
-        <Route
-          path="/community"
-          element={
-            <RequireAuth>
-              <CommunityPage />
-            </RequireAuth>
-          }
-        />
+        {/* Community was folded into Overview as a tab to avoid two near-
+            identical feeds; this keeps old links/bookmarks alive. */}
+        <Route path="/community" element={<Navigate to="/home" replace />} />
         <Route
           path="/community/posts/:id"
           element={

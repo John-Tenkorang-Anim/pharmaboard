@@ -10,16 +10,18 @@ import {
   CornerDownRight,
   Flag,
   Play,
+  Hash,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
+import { Chip } from "@/components/ui/Badge";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { Modal } from "@/components/ui/Modal";
 import { RichText } from "@/components/ui/RichText";
 import { useAuth } from "@/features/auth/AuthContext";
 import { formatRelative } from "@/lib/format";
 import type { FeedPost } from "@/lib/types";
-import { useComments, usePostActions, type PostComment } from "./api";
+import { useChannels, useComments, usePostActions, type PostComment } from "./api";
 const YOUTUBE_PATTERN =
   /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/;
 export function youTubeId(text: string) {
@@ -40,6 +42,8 @@ export function PostCard({ post }: { post: FeedPost }) {
   const input = useRef<HTMLTextAreaElement>(null);
   const { comment, remove, react, report } = usePostActions(post.id);
   const comments = useComments(post.id, expanded);
+  const channels = useChannels();
+  const community = channels.data?.items.find((c) => c.id === post.channel_id);
   const rows = comments.data?.pages.flatMap((p) => p.items) ?? [];
   const roots = rows.filter((c) => !c.parent_id);
   const video = youTubeId(post.body);
@@ -137,12 +141,20 @@ export function PostCard({ post }: { post: FeedPost }) {
             {post.author.practice_area || post.author.account_kind.replace("_", " ")}
             {post.author.region_code && ` · ${post.author.region_code}`}
           </p>
-          <Link
-            to={`/community/posts/${post.id}`}
-            className="mt-1 inline-block text-[11px] text-muted hover:underline"
-          >
-            {formatRelative(post.created_at)} · Community
-          </Link>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <Link
+              to={`/community/posts/${post.id}`}
+              className="text-[11px] text-muted hover:underline"
+            >
+              {formatRelative(post.created_at)}
+            </Link>
+            {community && (
+              <Chip className="bg-blue-50 text-blue-800">
+                <Hash size={10} />
+                {community.name}
+              </Chip>
+            )}
+          </div>
         </div>
         <button
           aria-label="Report post"

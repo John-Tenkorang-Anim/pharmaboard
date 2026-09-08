@@ -1,17 +1,8 @@
 import { MediaPicker } from "@/features/media/Media";
 import { platform } from "@/lib/platform";
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
-import {
-  Users,
-  ArrowUpRight,
-  MessageSquare,
-  PenLine,
-  Compass,
-  ArrowLeft,
-  Search,
-  RefreshCw,
-} from "lucide-react";
+import { Users, ArrowUpRight, MessageSquare, PenLine, ArrowLeft } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -20,34 +11,44 @@ import { Modal } from "@/components/ui/Modal";
 import { RichTextEditor } from "@/components/ui/RichText";
 import { SkeletonPost } from "@/components/ui/Skeleton";
 import { useAuth } from "@/features/auth/AuthContext";
-import {
-  useCommunityFeed,
-  useCreatePost,
-  useDirectory,
-  useThreads,
-  usePost,
-  type FeedScope,
-} from "./api";
+import type { Community } from "@/lib/types";
+import { useCreatePost, useDirectory, useThreads, usePost, type FeedScope } from "./api";
 import { PostCard } from "./PostCard";
 
 function PostComposerModal({
   open,
   onClose,
   scope,
+  channels,
+  defaultChannelId = "",
 }: {
   open: boolean;
   onClose: () => void;
   scope: FeedScope;
+  channels: Community[];
+  defaultChannelId?: string;
 }) {
   const create = useCreatePost(scope);
   const [body, setBody] = useState("");
   const [media, setMedia] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [channelId, setChannelId] = useState(defaultChannelId);
+  // Same render-time reset as RxForum's AskModal: the picked community
+  // snaps to the caller's default the instant the dialog opens, with no
+  // stale-selection frame from the last time it was open.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setChannelId(defaultChannelId);
+  }
   async function submit(e: FormEvent) {
     e.preventDefault();
     if ((!body.trim() && !media.length) || uploading) return;
     try {
-      await create.mutateAsync([body, ...media.map((id) => `[media:${id}]`)].join("\n"));
+      await create.mutateAsync({
+        body: [body, ...media.map((id) => `[media:${id}]`)].join("\n"),
+        channel_id: channelId || undefined,
+      });
       setMedia([]);
       setBody("");
       onClose();
@@ -58,6 +59,26 @@ function PostComposerModal({
   return (
     <Modal open={open} onClose={onClose} title="Write a post">
       <form onSubmit={submit} className="space-y-4">
+        {channels.length > 0 && (
+          <div>
+            <label htmlFor="post-community" className="mb-1.5 block text-[0.8125rem] font-medium text-ink">
+              Community
+            </label>
+            <select
+              id="post-community"
+              value={channelId}
+              onChange={(e) => setChannelId(e.target.value)}
+              className="w-full rounded border border-divider bg-surface px-3 py-2 text-sm text-ink focus-visible:border-accent-600 focus-visible:outline-none"
+            >
+              <option value="">Everyone (uncategorized)</option>
+              {channels.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <RichTextEditor label="Post" placeholder="What’s on your mind?" value={body} onChange={setBody} />
         <MediaPicker value={media} onChange={setMedia} onBusy={setUploading} />
         <p className="text-xs text-muted">
@@ -82,7 +103,15 @@ function PostComposerModal({
   );
 }
 
-export function PostComposer({ scope = "everyone" }: { scope?: FeedScope }) {
+export function PostComposer({
+  scope = "everyone",
+  channels = [],
+  defaultChannelId,
+}: {
+  scope?: FeedScope;
+  channels?: Community[];
+  defaultChannelId?: string;
+}) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   return (
@@ -114,7 +143,13 @@ export function PostComposer({ scope = "everyone" }: { scope?: FeedScope }) {
           Ask in {platform.forumName}
         </Link>
       </div>
-      <PostComposerModal open={open} onClose={() => setOpen(false)} scope={scope} />
+      <PostComposerModal
+        open={open}
+        onClose={() => setOpen(false)}
+        scope={scope}
+        channels={channels}
+        defaultChannelId={defaultChannelId}
+      />
     </section>
   );
 }
@@ -175,118 +210,14 @@ export function CommunitySidebar() {
     </div>
   );
 }
-export function CommunityPage() {
-  const [scope, setScope] = useState<FeedScope>("everyone");
-  const [search, setSearch] = useState("");
-  const [query, setQuery] = useState("");
-  useEffect(() => {
-    const timer = setTimeout(() => setQuery(search), 300);
-    return () => clearTimeout(timer);
-  }, [search]);
-  const feed = useCommunityFeed(scope, query);
-  const posts = feed.data?.pages.flatMap((p) => p.items) ?? [];
-  return (
-    <AppShell right={<CommunitySidebar />}>
-      <div className="mb-6">
-        <p className="eyebrow text-accent-700">THE COMMUNITY</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-          Ideas grow through conversation.
-        </h1>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          Discover perspectives, share what you know, and connect with your peers.
-        </p>
-      </div>
-      <PostComposer scope={scope} />
-      <div className="relative mt-5">
-        <Search size={16} className="absolute left-3 top-3 text-muted" />
-        <input
-          aria-label="Search community posts"
-          value={search}
-          maxLength={200}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search conversations and shared ideas"
-          className="w-full rounded-xl border border-hairline bg-white py-2.5 pl-10 pr-3 text-sm"
-        />
-      </div>
-      <div className="my-5 flex items-center justify-between">
-        <div className="flex gap-1 rounded-lg bg-slate-50 p-1">
-          {(
-            [
-              { key: "everyone", label: "Discover", icon: Compass },
-              { key: "following", label: "Following", icon: Users },
-            ] as const
-          ).map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => setScope(key)}
-              aria-pressed={scope === key}
-              className={`flex items-center gap-2 rounded-md px-4 py-2 text-xs font-semibold ${scope === key ? "bg-white text-accent-700 shadow-sm" : "text-muted"}`}
-            >
-              <Icon size={14} />
-              {label}
-            </button>
-          ))}
-        </div>
-        <button
-          className="flex items-center gap-2 text-xs text-muted"
-          onClick={() => feed.refetch()}
-          disabled={feed.isFetching}
-        >
-          <RefreshCw size={13} className={feed.isFetching ? "animate-spin" : ""} />
-          Latest posts
-        </button>
-      </div>
-      <ErrorBanner error={feed.error} />
-      {feed.isLoading ? (
-        <SkeletonPost />
-      ) : posts.length ? (
-        <div className="space-y-5">
-          {posts.map((p) => (
-            <PostCard key={p.id} post={p} />
-          ))}
-        </div>
-      ) : !feed.error ? (
-        <div className="social-card px-6 py-12 text-center">
-          <MessageSquare size={28} className="mx-auto mb-3 text-accent-600" />
-          <h2 className="font-semibold">
-            {scope === "following"
-              ? "Make this feed your own"
-              : "The next conversation starts with you"}
-          </h2>
-          <p className="mt-2 text-sm text-muted">
-            {scope === "following"
-              ? "Follow colleagues from their profiles to see their posts here."
-              : "Share a question, reflection, or useful resource above."}
-          </p>
-          {scope === "following" && (
-            <Link to="/network" className="mt-4 inline-block text-sm text-accent-700">
-              Find people to follow →
-            </Link>
-          )}
-        </div>
-      ) : null}
-      {feed.hasNextPage && (
-        <div className="mt-6 text-center">
-          <Button
-            variant="secondary"
-            loading={feed.isFetchingNextPage}
-            onClick={() => feed.fetchNextPage()}
-          >
-            Load more conversations
-          </Button>
-        </div>
-      )}
-    </AppShell>
-  );
-}
 export function PostPage() {
   const { id } = useParams();
   const post = usePost(id);
   return (
     <AppShell right={<CommunitySidebar />}>
-      <Link to="/community" className="mb-5 inline-flex items-center gap-2 text-sm text-muted">
+      <Link to="/home" className="mb-5 inline-flex items-center gap-2 text-sm text-muted">
         <ArrowLeft size={16} />
-        Back to Community
+        Back to Overview
       </Link>
       <h1 className="mb-5 text-2xl font-semibold">Conversation</h1>
       <ErrorBanner error={post.error} />

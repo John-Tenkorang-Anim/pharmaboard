@@ -47,6 +47,7 @@ type Post struct {
 	ReplyCount    int
 	ID            uuid.UUID
 	AuthorID      uuid.UUID
+	ChannelID     *uuid.UUID
 	Body          string
 	ReactionCount int
 	CreatedAt     time.Time
@@ -78,10 +79,12 @@ type ForumThread struct {
 	HiddenAt        *time.Time
 }
 
-// Channel is a member-creatable discussion space within RxForum — the same
-// role a subreddit plays: a named topic other threads are filed under.
-// created_by is nil for the handful of starter channels seeded by migration
-// 000014, which no member authored.
+// Channel is a member-creatable topic space shared by RxForum threads and
+// the main feed's posts — the same role a subreddit, or an X Community,
+// plays: a named topic other content is filed under. created_by is nil for
+// the handful of starter channels seeded by migration 000014, which no
+// member authored. MemberCount reflects explicit joins (channel_members),
+// distinct from ThreadCount/PostCount which reflect authored content.
 type Channel struct {
 	ID          uuid.UUID
 	Slug        string
@@ -89,7 +92,17 @@ type Channel struct {
 	Description string
 	CreatedBy   *uuid.UUID
 	ThreadCount int
+	PostCount   int
+	MemberCount int
 	CreatedAt   time.Time
+}
+
+// ChannelView is a Channel decorated with the viewer's own relationship to
+// it — whether they've joined — the same shape ForumThreadView adds on top
+// of ForumThread.
+type ChannelView struct {
+	Channel
+	ViewerMember bool
 }
 
 type ForumThreadView struct {

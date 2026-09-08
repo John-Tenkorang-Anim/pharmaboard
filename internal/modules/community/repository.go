@@ -18,7 +18,9 @@ type Repository interface {
 	// FeedPage returns visible posts newest-first. When followingOf is set,
 	// the page is restricted to authors that user follows (plus their own
 	// posts) — fan-out on read, per docs/technical-design.md section 20.
-	FeedPage(ctx context.Context, followingOf *uuid.UUID, before uuid.UUID, limit int, search string) ([]Post, error)
+	// When channelID is set, the page is further restricted to that
+	// community's posts.
+	FeedPage(ctx context.Context, followingOf, channelID *uuid.UUID, before uuid.UUID, limit int, search string) ([]Post, error)
 	PostsByAuthor(ctx context.Context, authorID uuid.UUID, before uuid.UUID, limit int) ([]Post, error)
 
 	Follow(ctx context.Context, followerID, followeeID uuid.UUID) error
@@ -45,6 +47,11 @@ type Repository interface {
 	CreateChannel(ctx context.Context, c Channel) error
 	ListChannels(ctx context.Context) ([]Channel, error)
 	ChannelByID(ctx context.Context, id uuid.UUID) (Channel, error)
+	// JoinChannel and LeaveChannel are idempotent desired-state operations,
+	// same convention as React/Unreact.
+	JoinChannel(ctx context.Context, channelID, userID uuid.UUID) error
+	LeaveChannel(ctx context.Context, channelID, userID uuid.UUID) error
+	ChannelMemberships(ctx context.Context, userID uuid.UUID, channelIDs []uuid.UUID) (map[uuid.UUID]bool, error)
 
 	CreateReport(ctx context.Context, r Report) error
 	Hide(ctx context.Context, subject SubjectType, subjectID uuid.UUID, reason string) error

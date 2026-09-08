@@ -162,6 +162,7 @@ export interface PublicProfile {
 export interface FeedPost {
   reply_count: number;
   id: string;
+  channel_id: string | null;
   body: string;
   author: PublicProfile;
   reaction_count: number;
@@ -204,12 +205,18 @@ export interface ForumThreadSummary {
   last_activity_at: string;
 }
 
-export interface ForumChannel {
+// Community is the shared topic taxonomy behind both RxForum's channels and
+// the main feed's "communities" — one list of topics, two surfaces to post
+// into (a discussion thread, or an ordinary post).
+export interface Community {
   id: string;
   slug: string;
   name: string;
   description: string;
   thread_count: number;
+  post_count: number;
+  member_count: number;
+  viewer_member: boolean;
   official: boolean;
   created_at: string;
 }

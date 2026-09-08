@@ -42,13 +42,16 @@ func (s *Service) hydrateAuthors(ctx context.Context, ids []uuid.UUID) (map[uuid
 
 // --- feed ------------------------------------------------------------------
 
-func (s *Service) CreatePost(ctx context.Context, authorID uuid.UUID, body string) (FeedPost, error) {
+func (s *Service) CreatePost(ctx context.Context, authorID uuid.UUID, body string, channelID *uuid.UUID) (FeedPost, error) {
 	body = strings.TrimSpace(body)
 	if body == "" || len(body) > MaxPostLength {
 		return FeedPost{}, fmt.Errorf("%w: a post must be 1-%d characters", ErrValidation, MaxPostLength)
 	}
+	if err := s.validateChannel(ctx, channelID); err != nil {
+		return FeedPost{}, err
+	}
 
-	post := Post{ID: uuid.Must(uuid.NewV7()), AuthorID: authorID, Body: body}
+	post := Post{ID: uuid.Must(uuid.NewV7()), AuthorID: authorID, ChannelID: channelID, Body: body}
 	if err := s.repo.CreatePost(ctx, post); err != nil {
 		return FeedPost{}, err
 	}
@@ -74,7 +77,7 @@ const (
 	ScopeFollowing FeedScope = "following"
 )
 
-func (s *Service) Feed(ctx context.Context, viewerID uuid.UUID, scope FeedScope, before uuid.UUID, limit int, search ...string) ([]FeedPost, error) {
+func (s *Service) Feed(ctx context.Context, viewerID uuid.UUID, scope FeedScope, channelID *uuid.UUID, before uuid.UUID, limit int, search ...string) ([]FeedPost, error) {
 	if limit <= 0 || limit > 100 {
 		limit = 25
 	}
@@ -91,7 +94,7 @@ func (s *Service) Feed(ctx context.Context, viewerID uuid.UUID, scope FeedScope,
 	if len(q) > 200 {
 		return nil, ErrValidation
 	}
-	posts, err := s.repo.FeedPage(ctx, followingOf, before, limit, q)
+	posts, err := s.repo.FeedPage(ctx, followingOf, channelID, before, limit, q)
 	if err != nil {
 		return nil, err
 	}
@@ -220,6 +223,23 @@ func (s *Service) SetReaction(ctx context.Context, subject SubjectType, subjectI
 	return s.repo.Unreact(ctx, subject, subjectID, userID)
 }
 
+// validateChannel confirms a channel actually exists before letting a post
+// or thread be filed under it — the foreign key would catch this too, but
+// this way a bad ID reads as an ordinary validation error, not a raw SQL
+// failure. A nil channelID (uncategorized) is always valid.
+func (s *Service) validateChannel(ctx context.Context, channelID *uuid.UUID) error {
+	if channelID == nil {
+		return nil
+	}
+	if _, err := s.repo.ChannelByID(ctx, *channelID); err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return fmt.Errorf("%w: that channel no longer exists", ErrValidation)
+		}
+		return err
+	}
+	return nil
+}
+
 // --- forum -----------------------------------------------------------------
 
 func (s *Service) CreateThread(ctx context.Context, authorID uuid.UUID, title, body string, tags []string, channelID *uuid.UUID) (ForumThread, error) {
@@ -237,16 +257,8 @@ func (s *Service) CreateThread(ctx context.Context, authorID uuid.UUID, title, b
 	if tags == nil {
 		tags = []string{}
 	}
-	if channelID != nil {
-		// A thread can only be filed under a channel that actually exists —
-		// the foreign key would catch this too, but this way a bad ID reads
-		// as an ordinary validation error, not a raw SQL failure.
-		if _, err := s.repo.ChannelByID(ctx, *channelID); err != nil {
-			if errors.Is(err, ErrNotFound) {
-				return ForumThread{}, fmt.Errorf("%w: that channel no longer exists", ErrValidation)
-			}
-			return ForumThread{}, err
-		}
+	if err := s.validateChannel(ctx, channelID); err != nil {
+		return ForumThread{}, err
 	}
 
 	thread := ForumThread{
@@ -426,11 +438,45 @@ func (s *Service) CreateChannel(ctx context.Context, createdBy uuid.UUID, name, 
 	if err := s.repo.CreateChannel(ctx, channel); err != nil {
 		return Channel{}, err
 	}
+	// A creator joining their own channel is the natural default — the same
+	// expectation as creating a subreddit or an X Community.
+	if err := s.repo.JoinChannel(ctx, channel.ID, createdBy); err != nil {
+		return Channel{}, err
+	}
 	return s.repo.ChannelByID(ctx, channel.ID)
 }
 
-func (s *Service) Channels(ctx context.Context) ([]Channel, error) {
-	return s.repo.ListChannels(ctx)
+func (s *Service) Channels(ctx context.Context, viewerID uuid.UUID) ([]ChannelView, error) {
+	channels, err := s.repo.ListChannels(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]uuid.UUID, len(channels))
+	for i, c := range channels {
+		ids[i] = c.ID
+	}
+	memberships, err := s.repo.ChannelMemberships(ctx, viewerID, ids)
+	if err != nil {
+		return nil, err
+	}
+	views := make([]ChannelView, len(channels))
+	for i, c := range channels {
+		views[i] = ChannelView{Channel: c, ViewerMember: memberships[c.ID]}
+	}
+	return views, nil
+}
+
+// JoinChannel and LeaveChannel record explicit membership — "communities
+// you're part of" — separate from who has posted or started a thread there.
+func (s *Service) JoinChannel(ctx context.Context, channelID, userID uuid.UUID) error {
+	if err := s.validateChannel(ctx, &channelID); err != nil {
+		return err
+	}
+	return s.repo.JoinChannel(ctx, channelID, userID)
+}
+
+func (s *Service) LeaveChannel(ctx context.Context, channelID, userID uuid.UUID) error {
+	return s.repo.LeaveChannel(ctx, channelID, userID)
 }
 
 // --- moderation ------------------------------------------------------------

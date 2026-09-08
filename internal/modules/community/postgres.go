@@ -39,11 +39,11 @@ func subjectTable(s SubjectType) (string, error) {
 
 // --- posts / feed ----------------------------------------------------------
 
-const postColumns = `id, author_id, body, reaction_count, created_at, hidden_at, (SELECT count(*) FROM post_comments pc WHERE pc.post_id=posts.id AND pc.deleted_at IS NULL)`
+const postColumns = `id, author_id, channel_id, body, reaction_count, created_at, hidden_at, (SELECT count(*) FROM post_comments pc WHERE pc.post_id=posts.id AND pc.deleted_at IS NULL)`
 
 func scanPost(row pgx.Row) (Post, error) {
 	var p Post
-	err := row.Scan(&p.ID, &p.AuthorID, &p.Body, &p.ReactionCount, &p.CreatedAt, &p.HiddenAt, &p.ReplyCount)
+	err := row.Scan(&p.ID, &p.AuthorID, &p.ChannelID, &p.Body, &p.ReactionCount, &p.CreatedAt, &p.HiddenAt, &p.ReplyCount)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Post{}, ErrNotFound
 	}
@@ -55,8 +55,8 @@ func scanPost(row pgx.Row) (Post, error) {
 
 func (r *PostgresRepository) CreatePost(ctx context.Context, p Post) error {
 	_, err := r.pool.Exec(ctx, `
-		INSERT INTO posts (id, author_id, body) VALUES ($1, $2, $3)`,
-		p.ID, p.AuthorID, p.Body)
+		INSERT INTO posts (id, author_id, channel_id, body) VALUES ($1, $2, $3, $4)`,
+		p.ID, p.AuthorID, p.ChannelID, p.Body)
 	if err != nil {
 		return fmt.Errorf("community: create post: %w", err)
 	}
@@ -77,9 +77,9 @@ func beforeClause(before uuid.UUID, args []any) (string, []any) {
 	return fmt.Sprintf(" AND p.id < $%d", len(args)), args
 }
 
-const aliasedPostColumns = `p.id, p.author_id, p.body, p.reaction_count, p.created_at, p.hidden_at, (SELECT count(*) FROM post_comments pc WHERE pc.post_id=p.id AND pc.deleted_at IS NULL)`
+const aliasedPostColumns = `p.id, p.author_id, p.channel_id, p.body, p.reaction_count, p.created_at, p.hidden_at, (SELECT count(*) FROM post_comments pc WHERE pc.post_id=p.id AND pc.deleted_at IS NULL)`
 
-func (r *PostgresRepository) FeedPage(ctx context.Context, followingOf *uuid.UUID, before uuid.UUID, limit int, search string) ([]Post, error) {
+func (r *PostgresRepository) FeedPage(ctx context.Context, followingOf, channelID *uuid.UUID, before uuid.UUID, limit int, search string) ([]Post, error) {
 	var args []any
 	query := "SELECT " + aliasedPostColumns + " FROM posts p WHERE p.hidden_at IS NULL"
 
@@ -88,6 +88,11 @@ func (r *PostgresRepository) FeedPage(ctx context.Context, followingOf *uuid.UUI
 		query += fmt.Sprintf(`
 			AND (p.author_id = $%d OR p.author_id IN (
 				SELECT followee_id FROM follows WHERE follower_id = $%d))`, len(args), len(args))
+	}
+
+	if channelID != nil {
+		args = append(args, *channelID)
+		query += fmt.Sprintf(" AND p.channel_id = $%d", len(args))
 	}
 
 	if search != "" {
@@ -422,11 +427,13 @@ func (r *PostgresRepository) AcceptReply(ctx context.Context, threadID, replyID,
 // --- channels ----------------------------------------------------------------
 
 const channelColumns = `c.id, c.slug, c.name, c.description, c.created_by, c.created_at,
-	(SELECT count(*) FROM forum_threads t WHERE t.channel_id = c.id AND t.hidden_at IS NULL)`
+	(SELECT count(*) FROM forum_threads t WHERE t.channel_id = c.id AND t.hidden_at IS NULL),
+	(SELECT count(*) FROM posts p WHERE p.channel_id = c.id AND p.hidden_at IS NULL),
+	(SELECT count(*) FROM channel_members m WHERE m.channel_id = c.id)`
 
 func scanChannel(row pgx.Row) (Channel, error) {
 	var c Channel
-	err := row.Scan(&c.ID, &c.Slug, &c.Name, &c.Description, &c.CreatedBy, &c.CreatedAt, &c.ThreadCount)
+	err := row.Scan(&c.ID, &c.Slug, &c.Name, &c.Description, &c.CreatedBy, &c.CreatedAt, &c.ThreadCount, &c.PostCount, &c.MemberCount)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Channel{}, ErrNotFound
 	}
@@ -473,6 +480,54 @@ func (r *PostgresRepository) ListChannels(ctx context.Context) ([]Channel, error
 
 func (r *PostgresRepository) ChannelByID(ctx context.Context, id uuid.UUID) (Channel, error) {
 	return scanChannel(r.pool.QueryRow(ctx, "SELECT "+channelColumns+" FROM forum_channels c WHERE c.id = $1", id))
+}
+
+func (r *PostgresRepository) JoinChannel(ctx context.Context, channelID, userID uuid.UUID) error {
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO channel_members (channel_id, user_id) VALUES ($1, $2)
+		ON CONFLICT DO NOTHING`, channelID, userID)
+	if err != nil {
+		return fmt.Errorf("community: join channel: %w", err)
+	}
+	return nil
+}
+
+func (r *PostgresRepository) LeaveChannel(ctx context.Context, channelID, userID uuid.UUID) error {
+	_, err := r.pool.Exec(ctx, `
+		DELETE FROM channel_members WHERE channel_id = $1 AND user_id = $2`, channelID, userID)
+	if err != nil {
+		return fmt.Errorf("community: leave channel: %w", err)
+	}
+	return nil
+}
+
+func (r *PostgresRepository) ChannelMemberships(ctx context.Context, userID uuid.UUID, channelIDs []uuid.UUID) (map[uuid.UUID]bool, error) {
+	member := map[uuid.UUID]bool{}
+	if len(channelIDs) == 0 {
+		return member, nil
+	}
+	keys := make([]string, len(channelIDs))
+	for i, id := range channelIDs {
+		keys[i] = id.String()
+	}
+
+	rows, err := r.pool.Query(ctx, `
+		SELECT channel_id FROM channel_members
+		WHERE user_id = $1 AND channel_id = ANY($2::uuid[])`,
+		userID, keys)
+	if err != nil {
+		return nil, fmt.Errorf("community: channel memberships: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("community: scan channel membership: %w", err)
+		}
+		member[id] = true
+	}
+	return member, rows.Err()
 }
 
 // --- moderation ------------------------------------------------------------

@@ -11,7 +11,6 @@ import {
   House,
   Users,
   MessagesSquare,
-  Globe2,
   Bell,
   GraduationCap,
   BookOpen,
@@ -27,7 +26,6 @@ import { useAuth } from "@/features/auth/AuthContext";
 import { Avatar } from "@/components/ui/Avatar";
 const navItems = [
   { to: "/home", label: "Overview", icon: House },
-  { to: "/community", label: "Community", icon: Globe2 },
   { to: "/notices", label: "Notice board", icon: Bell },
   { to: "/library", label: "My library", icon: BookOpen },
   { to: "/learning", label: "Learning", icon: GraduationCap },

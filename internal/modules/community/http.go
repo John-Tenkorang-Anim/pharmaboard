@@ -120,6 +120,8 @@ func Routes(svc *Service, auth func(http.Handler) http.Handler) chi.Router {
 	r.Route("/channels", func(r chi.Router) {
 		r.Get("/", channelsHandler(svc))
 		r.Post("/", createChannelHandler(svc))
+		r.Put("/{id}/membership", channelMembershipHandler(svc, true))
+		r.Delete("/{id}/membership", channelMembershipHandler(svc, false))
 	})
 
 	r.Route("/forum", func(r chi.Router) {
@@ -182,7 +184,17 @@ func feedHandler(svc *Service) http.HandlerFunc {
 			scope = ScopeFollowing
 		}
 
-		posts, err := svc.Feed(r.Context(), user.ID, scope, before, limit, r.URL.Query().Get("q"))
+		var channelID *uuid.UUID
+		if raw := r.URL.Query().Get("channel_id"); raw != "" {
+			id, err := uuid.Parse(raw)
+			if err != nil {
+				problem.BadRequest(w, "invalid_channel", "channel_id must be a UUID")
+				return
+			}
+			channelID = &id
+		}
+
+		posts, err := svc.Feed(r.Context(), user.ID, scope, channelID, before, limit, r.URL.Query().Get("q"))
 		if err != nil {
 			writeServiceError(w, err)
 			return
@@ -193,7 +205,8 @@ func feedHandler(svc *Service) http.HandlerFunc {
 
 func createPostHandler(svc *Service) http.HandlerFunc {
 	type request struct {
-		Body string `json:"body"`
+		Body      string     `json:"body"`
+		ChannelID *uuid.UUID `json:"channel_id"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, ok := viewer(w, r)
@@ -205,7 +218,7 @@ func createPostHandler(svc *Service) http.HandlerFunc {
 			problem.BadRequest(w, "invalid_json", err.Error())
 			return
 		}
-		post, err := svc.CreatePost(r.Context(), user.ID, req.Body)
+		post, err := svc.CreatePost(r.Context(), user.ID, req.Body, req.ChannelID)
 		if err != nil {
 			writeServiceError(w, err)
 			return
@@ -344,19 +357,44 @@ func createThreadHandler(svc *Service) http.HandlerFunc {
 
 func channelsHandler(svc *Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if _, ok := viewer(w, r); !ok {
+		user, ok := viewer(w, r)
+		if !ok {
 			return
 		}
-		channels, err := svc.Channels(r.Context())
+		channels, err := svc.Channels(r.Context(), user.ID)
 		if err != nil {
 			writeServiceError(w, err)
 			return
 		}
 		items := make([]map[string]any, len(channels))
 		for i, c := range channels {
-			items[i] = channelResponse(c)
+			items[i] = channelViewResponse(c)
 		}
 		writeJSON(w, http.StatusOK, map[string]any{"items": items})
+	}
+}
+
+func channelMembershipHandler(svc *Service, join bool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, ok := viewer(w, r)
+		if !ok {
+			return
+		}
+		id, ok := pathID(w, r)
+		if !ok {
+			return
+		}
+		var err error
+		if join {
+			err = svc.JoinChannel(r.Context(), id, user.ID)
+		} else {
+			err = svc.LeaveChannel(r.Context(), id, user.ID)
+		}
+		if err != nil {
+			writeServiceError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]bool{"member": join})
 	}
 }
 
@@ -380,7 +418,8 @@ func createChannelHandler(svc *Service) http.HandlerFunc {
 			writeServiceError(w, err)
 			return
 		}
-		writeJSON(w, http.StatusCreated, channelResponse(channel))
+		// The creator was just auto-joined by CreateChannel.
+		writeJSON(w, http.StatusCreated, channelViewResponse(ChannelView{Channel: channel, ViewerMember: true}))
 	}
 }
 
@@ -514,6 +553,7 @@ func profileJSON(p identity.Profile) map[string]any {
 func postResponse(p FeedPost) map[string]any {
 	return map[string]any{
 		"id":             p.ID,
+		"channel_id":     p.ChannelID,
 		"body":           p.Body,
 		"author":         profileJSON(p.Author),
 		"reaction_count": p.ReactionCount,
@@ -563,6 +603,8 @@ func channelResponse(c Channel) map[string]any {
 		"name":         c.Name,
 		"description":  c.Description,
 		"thread_count": c.ThreadCount,
+		"post_count":   c.PostCount,
+		"member_count": c.MemberCount,
 		"created_at":   c.CreatedAt,
 		// True for the handful of starter channels seeded by migration
 		// 000014 (no member authored them) — distinct from whether the
@@ -570,6 +612,12 @@ func channelResponse(c Channel) map[string]any {
 		// right after a successful create.
 		"official": c.CreatedBy == nil,
 	}
+}
+
+func channelViewResponse(c ChannelView) map[string]any {
+	out := channelResponse(c.Channel)
+	out["viewer_member"] = c.ViewerMember
+	return out
 }
 
 func writeServiceError(w http.ResponseWriter, err error) {
