@@ -41,11 +41,13 @@ export function AppShell({
   left,
   right,
   width = "wide",
+  focusMode = false,
 }: {
   children: ReactNode;
   left?: ReactNode;
   right?: ReactNode;
   width?: "wide" | "narrow";
+  focusMode?: boolean;
 }) {
   const { user, logout } = useAuth();
   const { data: unread } = useUnreadMessages();
@@ -84,7 +86,7 @@ export function AppShell({
       >
         Skip to content
       </a>
-      {mobile && (
+      {mobile && !focusMode && (
         <button
           aria-label="Close navigation"
           className="fixed inset-0 z-40 bg-ink/30 lg:hidden"
@@ -93,6 +95,7 @@ export function AppShell({
       )}
       <aside
         id="workspace-navigation"
+        style={focusMode ? { display: "none" } : undefined}
         className={clsx(
           "social-sidebar fixed inset-y-0 left-0 z-50 flex w-60 flex-col border-r border-hairline bg-white transition-transform",
           mobile ? "translate-x-0" : "-translate-x-full",
@@ -184,8 +187,11 @@ export function AppShell({
           </Link>
         </div>
       </aside>
-      <div className={collapsed ? "" : "lg:pl-60"}>
-        <header className="social-topbar sticky top-0 z-30 bg-white/95 backdrop-blur">
+      <div className={focusMode ? "fixed inset-0 z-40 bg-canvas" : collapsed ? "" : "lg:pl-60"}>
+        <header
+          style={focusMode ? { display: "none" } : undefined}
+          className="social-topbar sticky top-0 z-30 bg-white/95 backdrop-blur"
+        >
           <div className="flex h-20 items-center gap-4 px-5 md:px-8">
             <button
               aria-label="Open navigation"
@@ -228,7 +234,7 @@ export function AppShell({
             </Link>
           </div>
         </header>
-        {user?.display_name.includes("· Preview") && (
+        {!focusMode && user?.display_name.includes("· Preview") && (
           <div className="bg-white px-5 py-2 text-xs text-muted md:px-8">
             Design preview · Sample people, opportunities, and learning content are illustrative.
           </div>
@@ -237,8 +243,8 @@ export function AppShell({
           id="main-content"
           data-section={current?.to.slice(1)}
           className={clsx(
-            "mx-auto px-5 py-8 md:px-8",
-            width === "narrow" ? "max-w-4xl" : "max-w-[1440px]",
+            focusMode ? "flex h-dvh min-h-0 flex-col p-3 sm:p-5" : "mx-auto px-5 py-8 md:px-8",
+            !focusMode && (width === "narrow" ? "max-w-4xl" : "max-w-[1440px]"),
           )}
         >
           {left || right ? (
@@ -253,7 +259,10 @@ export function AppShell({
             children
           )}
         </main>
-        <footer className="mx-5 flex flex-wrap justify-between gap-2 py-5 text-[11px] text-muted md:mx-8">
+        <footer
+          style={focusMode ? { display: "none" } : undefined}
+          className="mx-5 flex flex-wrap justify-between gap-2 py-5 text-[11px] text-muted md:mx-8"
+        >
           <span>{platform.name} · Connected by profession. United by purpose.</span>
           <Link to="/forum" className="hover:underline">
             Learn from your community ↗

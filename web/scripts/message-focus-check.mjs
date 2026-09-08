@@ -1,0 +1,13 @@
+import {chromium} from 'playwright';
+import assert from 'node:assert/strict';
+const b=await chromium.launch();const p=await b.newPage({viewport:{width:1440,height:900}});const errors=[];p.on('pageerror',e=>errors.push(e.message));
+await p.addInitScript(()=>localStorage.setItem('pharmaboard.access_token','focus-preview'));
+await p.route('**/v1/**',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(r.request().url().includes('/auth/me')?{id:'preview',display_name:'Ama Mensah',account_kind:'student'}:{count:0,items:[]})}));
+await p.goto('http://127.0.0.1:5174/messaging');
+await p.getByRole('button',{name:'Expand messages'}).click();
+assert.equal(await p.locator('#workspace-navigation').isVisible(),false);
+assert.equal(await p.locator('#main-content').evaluate(e=>Math.round(e.getBoundingClientRect().height)),900);
+await p.getByRole('button',{name:'New message',exact:true}).click();await p.getByRole('dialog').waitFor();await p.keyboard.press('Escape');await p.getByRole('dialog').waitFor({state:'hidden'});
+assert(await p.getByRole('button',{name:'Exit message focus'}).isVisible());await p.keyboard.press('Escape');await p.getByRole('button',{name:'Expand messages'}).waitFor();
+await p.setViewportSize({width:390,height:844});await p.getByRole('button',{name:'Expand messages'}).click();assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert((await p.getByRole('button',{name:'New message',exact:true}).boundingBox()).height>=44);
+await p.getByRole('button',{name:'Exit message focus'}).click();assert.deepEqual(errors,[]);await b.close();console.log('PASS desktop/mobile focus, exit, Escape modal handling, 44px New message button (mocked API)');

@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import clsx from "clsx";
 import {
   MessageCircle,
+  Maximize2,
+  Minimize2,
   Plus,
   Send,
   Video,
@@ -328,18 +330,51 @@ export function MessagingPage() {
   const navigate = useNavigate();
   const { data, isLoading, error } = useConversations();
   const [modalOpen, setModalOpen] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
+  useEffect(() => {
+    if (!focusMode) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const escape = (event: KeyboardEvent) => {
+      if (
+        event.key === "Escape" &&
+        !modalOpen &&
+        !event.defaultPrevented &&
+        !document.querySelector("dialog[open]")
+      )
+        setFocusMode(false);
+    };
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.body.style.overflow = previous;
+      document.removeEventListener("keydown", escape);
+    };
+  }, [focusMode, modalOpen]);
 
   return (
-    <AppShell>
-      <div className="mb-4 flex items-start justify-between gap-4">
+    <AppShell focusMode={focusMode}>
+      <div className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-[1.75rem] font-semibold text-ink">Messages</h1>
           <p className="mt-1 text-sm text-faint">Direct and small-group conversations.</p>
         </div>
-        <Button onClick={() => setModalOpen(true)}>
-          <Plus className="size-4" />
-          New
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="lg"
+            onClick={() => setFocusMode((value) => !value)}
+            aria-pressed={focusMode}
+            aria-label={focusMode ? "Exit message focus" : "Expand messages"}
+            title={focusMode ? "Exit focus (Esc)" : "Expand messages"}
+          >
+            {focusMode ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+            <span className="hidden sm:inline">{focusMode ? "Exit focus" : "Expand"}</span>
+          </Button>
+          <Button size="lg" onClick={() => setModalOpen(true)}>
+            <Plus className="size-4" />
+            New message
+          </Button>
+        </div>
       </div>
 
       {conversationId && (
@@ -352,7 +387,12 @@ export function MessagingPage() {
           All conversations
         </Button>
       )}
-      <Card className="flex min-h-[520px] h-[calc(100dvh-15rem)] overflow-hidden p-0">
+      <Card
+        className={clsx(
+          "flex overflow-hidden p-0",
+          focusMode ? "min-h-0 flex-1" : "min-h-[420px] h-[calc(100dvh-15rem)]",
+        )}
+      >
         <aside
           className={clsx(
             "w-full md:w-64 shrink-0 flex-col border-r border-hairline",
