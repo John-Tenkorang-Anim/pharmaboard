@@ -117,6 +117,11 @@ func Routes(svc *Service, auth func(http.Handler) http.Handler) chi.Router {
 		r.Delete("/follow", followHandler(svc, false))
 	})
 
+	r.Route("/channels", func(r chi.Router) {
+		r.Get("/", channelsHandler(svc))
+		r.Post("/", createChannelHandler(svc))
+	})
+
 	r.Route("/forum", func(r chi.Router) {
 		r.Get("/", threadsHandler(svc))
 		r.Post("/", createThreadHandler(svc))
@@ -288,7 +293,17 @@ func threadsHandler(svc *Service) http.HandlerFunc {
 		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 
-		threads, err := svc.Threads(r.Context(), user.ID, r.URL.Query().Get("q"), page, limit)
+		var channelID *uuid.UUID
+		if raw := r.URL.Query().Get("channel_id"); raw != "" {
+			id, err := uuid.Parse(raw)
+			if err != nil {
+				problem.BadRequest(w, "invalid_channel", "channel_id must be a UUID")
+				return
+			}
+			channelID = &id
+		}
+
+		threads, err := svc.Threads(r.Context(), user.ID, r.URL.Query().Get("q"), channelID, page, limit)
 		if err != nil {
 			writeServiceError(w, err)
 			return
@@ -303,9 +318,10 @@ func threadsHandler(svc *Service) http.HandlerFunc {
 
 func createThreadHandler(svc *Service) http.HandlerFunc {
 	type request struct {
-		Title string   `json:"title"`
-		Body  string   `json:"body"`
-		Tags  []string `json:"tags"`
+		Title     string     `json:"title"`
+		Body      string     `json:"body"`
+		Tags      []string   `json:"tags"`
+		ChannelID *uuid.UUID `json:"channel_id"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, ok := viewer(w, r)
@@ -317,12 +333,54 @@ func createThreadHandler(svc *Service) http.HandlerFunc {
 			problem.BadRequest(w, "invalid_json", err.Error())
 			return
 		}
-		thread, err := svc.CreateThread(r.Context(), user.ID, req.Title, req.Body, req.Tags)
+		thread, err := svc.CreateThread(r.Context(), user.ID, req.Title, req.Body, req.Tags, req.ChannelID)
 		if err != nil {
 			writeServiceError(w, err)
 			return
 		}
 		writeJSON(w, http.StatusCreated, map[string]any{"id": thread.ID, "title": thread.Title})
+	}
+}
+
+func channelsHandler(svc *Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := viewer(w, r); !ok {
+			return
+		}
+		channels, err := svc.Channels(r.Context())
+		if err != nil {
+			writeServiceError(w, err)
+			return
+		}
+		items := make([]map[string]any, len(channels))
+		for i, c := range channels {
+			items[i] = channelResponse(c)
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"items": items})
+	}
+}
+
+func createChannelHandler(svc *Service) http.HandlerFunc {
+	type request struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, ok := viewer(w, r)
+		if !ok {
+			return
+		}
+		var req request
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			problem.BadRequest(w, "invalid_json", err.Error())
+			return
+		}
+		channel, err := svc.CreateChannel(r.Context(), user.ID, req.Name, req.Description)
+		if err != nil {
+			writeServiceError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusCreated, channelResponse(channel))
 	}
 }
 
@@ -484,6 +542,7 @@ func feedResponse(posts []FeedPost) map[string]any {
 func threadResponse(t ForumThreadView) map[string]any {
 	return map[string]any{
 		"id":               t.ID,
+		"channel_id":       t.ChannelID,
 		"title":            t.Title,
 		"body":             t.Body,
 		"tags":             t.Tags,
@@ -494,6 +553,22 @@ func threadResponse(t ForumThreadView) map[string]any {
 		"has_accepted":     t.AcceptedReplyID != nil,
 		"created_at":       t.CreatedAt,
 		"last_activity_at": t.LastActivityAt,
+	}
+}
+
+func channelResponse(c Channel) map[string]any {
+	return map[string]any{
+		"id":           c.ID,
+		"slug":         c.Slug,
+		"name":         c.Name,
+		"description":  c.Description,
+		"thread_count": c.ThreadCount,
+		"created_at":   c.CreatedAt,
+		// True for the handful of starter channels seeded by migration
+		// 000014 (no member authored them) — distinct from whether the
+		// *viewer* created a channel, which the client already knows locally
+		// right after a successful create.
+		"official": c.CreatedBy == nil,
 	}
 }
 

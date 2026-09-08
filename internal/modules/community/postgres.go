@@ -284,12 +284,12 @@ func (r *PostgresRepository) ReactedSubjects(ctx context.Context, subject Subjec
 
 // --- forum -----------------------------------------------------------------
 
-const threadColumns = `id, author_id, title, body, tags, accepted_reply_id,
+const threadColumns = `id, author_id, channel_id, title, body, tags, accepted_reply_id,
 	reply_count, reaction_count, created_at, last_activity_at, hidden_at`
 
 func scanThread(row pgx.Row) (ForumThread, error) {
 	var t ForumThread
-	err := row.Scan(&t.ID, &t.AuthorID, &t.Title, &t.Body, &t.Tags, &t.AcceptedReplyID,
+	err := row.Scan(&t.ID, &t.AuthorID, &t.ChannelID, &t.Title, &t.Body, &t.Tags, &t.AcceptedReplyID,
 		&t.ReplyCount, &t.ReactionCount, &t.CreatedAt, &t.LastActivityAt, &t.HiddenAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ForumThread{}, ErrNotFound
@@ -302,9 +302,9 @@ func scanThread(row pgx.Row) (ForumThread, error) {
 
 func (r *PostgresRepository) CreateThread(ctx context.Context, t ForumThread) error {
 	_, err := r.pool.Exec(ctx, `
-		INSERT INTO forum_threads (id, author_id, title, body, tags)
-		VALUES ($1, $2, $3, $4, $5)`,
-		t.ID, t.AuthorID, t.Title, t.Body, t.Tags)
+		INSERT INTO forum_threads (id, author_id, channel_id, title, body, tags)
+		VALUES ($1, $2, $3, $4, $5, $6)`,
+		t.ID, t.AuthorID, t.ChannelID, t.Title, t.Body, t.Tags)
 	if err != nil {
 		return fmt.Errorf("community: create thread: %w", err)
 	}
@@ -315,7 +315,7 @@ func (r *PostgresRepository) GetThread(ctx context.Context, id uuid.UUID) (Forum
 	return scanThread(r.pool.QueryRow(ctx, "SELECT "+threadColumns+" FROM forum_threads WHERE id = $1", id))
 }
 
-func (r *PostgresRepository) ThreadPage(ctx context.Context, search string, offset, limit int) ([]ForumThread, error) {
+func (r *PostgresRepository) ThreadPage(ctx context.Context, search string, channelID *uuid.UUID, offset, limit int) ([]ForumThread, error) {
 	args := []any{limit, offset}
 	query := "SELECT " + threadColumns + " FROM forum_threads WHERE hidden_at IS NULL"
 
@@ -325,6 +325,10 @@ func (r *PostgresRepository) ThreadPage(ctx context.Context, search string, offs
 		// members), but search still runs against the stored tsvector rather
 		// than a LIKE scan — see forum_threads_search_idx.
 		query += fmt.Sprintf(" AND search_document @@ plainto_tsquery('english', $%d)", len(args))
+	}
+	if channelID != nil {
+		args = append(args, *channelID)
+		query += fmt.Sprintf(" AND channel_id = $%d", len(args))
 	}
 
 	query += " ORDER BY last_activity_at DESC LIMIT $1 OFFSET $2"
@@ -413,6 +417,62 @@ func (r *PostgresRepository) AcceptReply(ctx context.Context, threadID, replyID,
 		return ErrForbidden
 	}
 	return nil
+}
+
+// --- channels ----------------------------------------------------------------
+
+const channelColumns = `c.id, c.slug, c.name, c.description, c.created_by, c.created_at,
+	(SELECT count(*) FROM forum_threads t WHERE t.channel_id = c.id AND t.hidden_at IS NULL)`
+
+func scanChannel(row pgx.Row) (Channel, error) {
+	var c Channel
+	err := row.Scan(&c.ID, &c.Slug, &c.Name, &c.Description, &c.CreatedBy, &c.CreatedAt, &c.ThreadCount)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Channel{}, ErrNotFound
+	}
+	if err != nil {
+		return Channel{}, fmt.Errorf("community: scan channel: %w", err)
+	}
+	return c, nil
+}
+
+func (r *PostgresRepository) CreateChannel(ctx context.Context, c Channel) error {
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO forum_channels (id, slug, name, description, created_by)
+		VALUES ($1, $2, $3, $4, $5)`,
+		c.ID, c.Slug, c.Name, c.Description, c.CreatedBy)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return ErrAlreadyExists
+		}
+		return fmt.Errorf("community: create channel: %w", err)
+	}
+	return nil
+}
+
+func (r *PostgresRepository) ListChannels(ctx context.Context) ([]Channel, error) {
+	// Alphabetical, not by activity — a channel someone just created should
+	// be just as easy to find as an old, busy one.
+	rows, err := r.pool.Query(ctx, "SELECT "+channelColumns+" FROM forum_channels c ORDER BY c.name")
+	if err != nil {
+		return nil, fmt.Errorf("community: list channels: %w", err)
+	}
+	defer rows.Close()
+
+	channels := []Channel{}
+	for rows.Next() {
+		c, err := scanChannel(rows)
+		if err != nil {
+			return nil, err
+		}
+		channels = append(channels, c)
+	}
+	return channels, rows.Err()
+}
+
+func (r *PostgresRepository) ChannelByID(ctx context.Context, id uuid.UUID) (Channel, error) {
+	return scanChannel(r.pool.QueryRow(ctx, "SELECT "+channelColumns+" FROM forum_channels c WHERE c.id = $1", id))
 }
 
 // --- moderation ------------------------------------------------------------

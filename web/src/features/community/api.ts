@@ -4,6 +4,7 @@ import type {
   DirectoryResponse,
   FeedPost,
   FeedResponse,
+  ForumChannel,
   ForumThreadSummary,
   ProfileView,
   ThreadDetail,
@@ -124,13 +125,29 @@ export function useDirectory(search: string) {
   });
 }
 
-export function useThreads(search: string) {
+export function useThreads(search: string, channelId?: string) {
   return useQuery({
-    queryKey: ["forum", search],
+    queryKey: ["forum", search, channelId ?? ""],
     queryFn: () =>
       apiFetch<{ items: ForumThreadSummary[] }>(
-        `/community/forum?q=${encodeURIComponent(search)}&limit=30`,
+        `/community/forum?q=${encodeURIComponent(search)}&limit=30${channelId ? `&channel_id=${channelId}` : ""}`,
       ),
+  });
+}
+
+export function useChannels() {
+  return useQuery({
+    queryKey: ["channels"],
+    queryFn: () => apiFetch<{ items: ForumChannel[] }>("/community/channels"),
+  });
+}
+
+export function useCreateChannel() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { name: string; description: string }) =>
+      apiFetch<ForumChannel>("/community/channels", { method: "POST", body: input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["channels"] }),
   });
 }
 
@@ -145,9 +162,12 @@ export function useThread(id: string | undefined) {
 export function useCreateThread() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { title: string; body: string; tags: string[] }) =>
+    mutationFn: (input: { title: string; body: string; tags: string[]; channel_id?: string }) =>
       apiFetch<{ id: string }>("/community/forum", { method: "POST", body: input }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["forum"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["forum"] });
+      queryClient.invalidateQueries({ queryKey: ["channels"] });
+    },
   });
 }
 

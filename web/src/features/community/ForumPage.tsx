@@ -1,8 +1,8 @@
 import { RichTextEditor } from "@/components/ui/RichText";
 import { platform } from "@/lib/platform";
 import { useState, useEffect, type FormEvent } from "react";
-import { Link } from "react-router-dom";
-import { MessagesSquare, CheckCircle2, Search, Plus, MessageSquare } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { MessagesSquare, CheckCircle2, Search, Plus, MessageSquare, Hash } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -12,15 +12,36 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { Modal } from "@/components/ui/Modal";
-import { TextInput } from "@/components/ui/Field";
+import { TextInput, TextArea } from "@/components/ui/Field";
 import { formatRelative } from "@/lib/format";
-import { useCreateThread, useThreads } from "./api";
+import type { ForumChannel } from "@/lib/types";
+import { useChannels, useCreateChannel, useCreateThread, useThreads } from "./api";
 
-function AskModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function AskModal({
+  open,
+  onClose,
+  channels,
+  defaultChannelId,
+}: {
+  open: boolean;
+  onClose: () => void;
+  channels: ForumChannel[];
+  defaultChannelId: string;
+}) {
   const createThread = useCreateThread();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [tags, setTags] = useState("");
+  const [channelId, setChannelId] = useState(defaultChannelId);
+  // Reset the picked channel to the caller's default each time the dialog
+  // opens — adjusted during render (not an effect) so the very first paint
+  // of the reopened dialog already reflects the new default, with no frame
+  // where a stale selection from the last time it was open is visible.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setChannelId(defaultChannelId);
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -33,6 +54,7 @@ function AskModal({ open, onClose }: { open: boolean; onClose: () => void }) {
           .map((t) => t.trim())
           .filter(Boolean)
           .slice(0, 5),
+        channel_id: channelId || undefined,
       });
       setTitle("");
       setBody("");
@@ -46,6 +68,26 @@ function AskModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <Modal open={open} onClose={onClose} title="Start a study discussion">
       <form onSubmit={submit} className="space-y-4">
+        {channels.length > 0 && (
+          <div>
+            <label htmlFor="thread-channel" className="mb-1.5 block text-[0.8125rem] font-medium text-ink">
+              Channel
+            </label>
+            <select
+              id="thread-channel"
+              value={channelId}
+              onChange={(e) => setChannelId(e.target.value)}
+              className="w-full rounded border border-divider bg-surface px-3 py-2 text-sm text-ink focus-visible:border-accent-600 focus-visible:outline-none"
+            >
+              <option value="">Uncategorized</option>
+              {channels.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <TextInput
           id="title"
           label="Question"
@@ -110,17 +152,87 @@ function AskModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   );
 }
 
+function CreateChannelModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const createChannel = useCreateChannel();
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    try {
+      await createChannel.mutateAsync({ name, description });
+      setName("");
+      setDescription("");
+      onClose();
+    } catch {
+      /* Keep the draft available for retry. */
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="Create a channel">
+      <form onSubmit={submit} className="space-y-4">
+        <TextInput
+          id="channel-name"
+          label="Channel name"
+          placeholder="Community Pharmacy"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          minLength={2}
+          maxLength={80}
+          required
+        />
+        <TextArea
+          id="channel-description"
+          label="Description"
+          placeholder="What belongs in this channel?"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          maxLength={300}
+          rows={3}
+        />
+        <ErrorBanner error={createChannel.error} />
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" loading={createChannel.isPending}>
+            Create channel
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 export function ForumPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
-  const [askOpen, setAskOpen] = useState(false);
+  const [askOpen, setAskOpen] = useState(() => searchParams.get("ask") === "1");
+  const [createChannelOpen, setCreateChannelOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [topic, setTopic] = useState("");
   const [filter, setFilter] = useState("all");
+  const [channelId, setChannelId] = useState("");
+
+  useEffect(() => {
+    if (searchParams.has("ask")) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("ask");
+      setSearchParams(next, { replace: true });
+    }
+    // Only ever consume the query param once, on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => setQuery(search), 250);
     return () => clearTimeout(timer);
   }, [search]);
-  const { data, isLoading, error } = useThreads(query);
+
+  const channels = useChannels();
+  const channelItems = channels.data?.items ?? [];
+  const { data, isLoading, error } = useThreads(query, channelId || undefined);
   const threads = (data?.items ?? []).filter(
     (t) =>
       (!topic || t.tags.includes(topic)) &&
@@ -145,7 +257,56 @@ export function ForumPage() {
         </Button>
       </div>
 
-      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_270px]">
+      <div className="grid gap-8 xl:grid-cols-[220px_minmax(0,1fr)_270px]">
+        <aside className="space-y-1">
+          <div className="mb-2 flex items-center justify-between px-1">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-faint">
+              Channels
+            </h2>
+            <button
+              type="button"
+              aria-label="Create a channel"
+              onClick={() => setCreateChannelOpen(true)}
+              className="rounded p-1 text-muted hover:bg-slate-50 hover:text-accent-700"
+            >
+              <Plus className="size-4" />
+            </button>
+          </div>
+          <button
+            onClick={() => setChannelId("")}
+            aria-pressed={channelId === ""}
+            className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm ${channelId === "" ? "bg-ink text-white" : "text-muted hover:bg-slate-50"}`}
+          >
+            All channels
+          </button>
+          {channelItems.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setChannelId(c.id)}
+              aria-pressed={channelId === c.id}
+              className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm ${channelId === c.id ? "bg-ink text-white" : "text-muted hover:bg-slate-50"}`}
+              title={c.description || c.name}
+            >
+              <span className="flex min-w-0 items-center gap-1.5">
+                <Hash className="size-3.5 shrink-0" />
+                <span className="truncate">{c.name}</span>
+              </span>
+              <span
+                className={`shrink-0 text-xs ${channelId === c.id ? "text-white/70" : "text-faint"}`}
+              >
+                {c.thread_count}
+              </span>
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setCreateChannelOpen(true)}
+            className="mt-1 flex w-full items-center gap-1.5 rounded-lg px-3 py-2 text-left text-sm text-accent-700 hover:bg-accent-50"
+          >
+            <Plus className="size-3.5" />
+            New channel
+          </button>
+        </aside>
         <section className="min-w-0">
           <div className="mb-5 flex flex-wrap gap-2">
             {[
@@ -196,62 +357,71 @@ export function ForumPage() {
             </Card>
           ) : threads.length > 0 ? (
             <div className="space-y-4">
-              {threads.map((thread) => (
-                <Link
-                  key={thread.id}
-                  to={`/forum/${thread.id}`}
-                  className="social-card block p-2 transition-shadow hover:shadow-md"
-                >
-                  <div className="px-4 py-3.5">
-                    <div className="flex items-start gap-3">
-                      <Avatar
-                        userId={thread.author.id}
-                        name={thread.author.display_name}
-                        size="sm"
-                        verification={thread.author.verification_state}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-3">
-                          <h2 className="text-lg font-semibold leading-7 text-ink">
-                            {thread.title}
-                          </h2>
-                          {thread.has_accepted && (
-                            <Chip className="shrink-0 bg-accent-50 text-accent-700">
-                              <CheckCircle2 className="size-3" />
-                              Answered
-                            </Chip>
-                          )}
-                        </div>
-                        <p className="mt-1 line-clamp-2 text-[0.8125rem] leading-relaxed text-faint">
-                          {thread.body.replace(/[#*=]/g, "")}
-                        </p>
-                        <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                          {thread.tags.map((tag) => (
-                            <Chip key={tag} className="bg-hairline text-muted">
-                              #{tag}
-                            </Chip>
-                          ))}
-                        </div>
-                        <div className="mt-4 flex flex-wrap items-center gap-4 text-[0.8125rem] text-faint">
-                          <span>{thread.author.display_name}</span>
-                          <span className="flex items-center gap-1">
-                            <MessageSquare className="size-3.5" />
-                            {thread.reply_count} {thread.reply_count === 1 ? "reply" : "replies"}
-                          </span>
-                          <span>{formatRelative(thread.last_activity_at)}</span>
+              {threads.map((thread) => {
+                const channel = channelItems.find((c) => c.id === thread.channel_id);
+                return (
+                  <Link
+                    key={thread.id}
+                    to={`/forum/${thread.id}`}
+                    className="social-card block p-2 transition-shadow hover:shadow-md"
+                  >
+                    <div className="px-4 py-3.5">
+                      <div className="flex items-start gap-3">
+                        <Avatar
+                          userId={thread.author.id}
+                          name={thread.author.display_name}
+                          size="sm"
+                          verification={thread.author.verification_state}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-3">
+                            <h2 className="text-lg font-semibold leading-7 text-ink">
+                              {thread.title}
+                            </h2>
+                            {thread.has_accepted && (
+                              <Chip className="shrink-0 bg-accent-50 text-accent-700">
+                                <CheckCircle2 className="size-3" />
+                                Answered
+                              </Chip>
+                            )}
+                          </div>
+                          <p className="mt-1 line-clamp-2 text-[0.8125rem] leading-relaxed text-faint">
+                            {thread.body.replace(/[#*=]/g, "")}
+                          </p>
+                          <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                            {channel && (
+                              <Chip className="bg-blue-50 text-blue-800">
+                                <Hash className="size-3" />
+                                {channel.name}
+                              </Chip>
+                            )}
+                            {thread.tags.map((tag) => (
+                              <Chip key={tag} className="bg-hairline text-muted">
+                                #{tag}
+                              </Chip>
+                            ))}
+                          </div>
+                          <div className="mt-4 flex flex-wrap items-center gap-4 text-[0.8125rem] text-faint">
+                            <span>{thread.author.display_name}</span>
+                            <span className="flex items-center gap-1">
+                              <MessageSquare className="size-3.5" />
+                              {thread.reply_count} {thread.reply_count === 1 ? "reply" : "replies"}
+                            </span>
+                            <span>{formatRelative(thread.last_activity_at)}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
           ) : (
             <Card>
               <EmptyState
                 icon={<MessagesSquare className="size-6" />}
                 title={
-                  search || topic || filter !== "all"
+                  search || topic || filter !== "all" || channelId
                     ? "No discussions match these filters"
                     : "Start the first study discussion"
                 }
@@ -294,7 +464,13 @@ export function ForumPage() {
           </section>
         </aside>
       </div>
-      <AskModal open={askOpen} onClose={() => setAskOpen(false)} />
+      <AskModal
+        open={askOpen}
+        onClose={() => setAskOpen(false)}
+        channels={channelItems}
+        defaultChannelId={channelId}
+      />
+      <CreateChannelModal open={createChannelOpen} onClose={() => setCreateChannelOpen(false)} />
     </AppShell>
   );
 }

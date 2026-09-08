@@ -5,6 +5,7 @@ package community_test
 
 import (
 	"context"
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -172,7 +173,7 @@ func TestAcceptReply_OnlyThreadAuthor(t *testing.T) {
 	answerer := mustCreateUser(t, pool)
 
 	thread, err := svc.CreateThread(ctx, asker, "How should we store this preparation?",
-		"Looking for guidance on storage after reconstitution.", []string{"storage"})
+		"Looking for guidance on storage after reconstitution.", []string{"storage"}, nil)
 	if err != nil {
 		t.Fatalf("create thread: %v", err)
 	}
@@ -208,7 +209,7 @@ func TestReplyCountStaysInStep(t *testing.T) {
 
 	asker := mustCreateUser(t, pool)
 	thread, err := svc.CreateThread(ctx, asker, "A question with several answers",
-		"Body of the question.", nil)
+		"Body of the question.", nil, nil)
 	if err != nil {
 		t.Fatalf("create thread: %v", err)
 	}
@@ -330,5 +331,95 @@ func TestNetworkGraphSeparatesFollowingAndRecommendations(t *testing.T) {
 	suggestions, err = repo.NetworkIDs(ctx, a, "suggested", uuid.Nil)
 	if err != nil || len(suggestions) != 0 {
 		t.Fatalf("already followed suggested %+v %v", suggestions, err)
+	}
+}
+
+// TestChannels_CreateListAndFilter guards the new Reddit-style channels:
+// a member-created channel appears in the listing, and a thread posted into
+// it is excluded from another channel's filtered page.
+func TestChannels_CreateListAndFilter(t *testing.T) {
+	pool := testPool(t)
+	ctx := context.Background()
+	svc := newService(pool)
+
+	creator := mustCreateUser(t, pool)
+	unique := strings.ReplaceAll(uuid.NewString(), "-", "")[:8]
+	name := "Test Channel " + unique
+
+	channel, err := svc.CreateChannel(ctx, creator, name, "A channel created by a test.")
+	if err != nil {
+		t.Fatalf("create channel: %v", err)
+	}
+	if channel.ThreadCount != 0 {
+		t.Fatalf("expected a fresh channel to start with no threads, got %d", channel.ThreadCount)
+	}
+
+	channels, err := svc.Channels(ctx)
+	if err != nil {
+		t.Fatalf("list channels: %v", err)
+	}
+	var found bool
+	for _, c := range channels {
+		if c.ID == channel.ID {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("newly created channel did not appear in the listing")
+	}
+
+	other, err := svc.CreateChannel(ctx, creator, "Other Channel "+unique, "")
+	if err != nil {
+		t.Fatalf("create other channel: %v", err)
+	}
+
+	thread, err := svc.CreateThread(ctx, creator, "A question filed under a channel",
+		"Body of the question.", nil, &channel.ID)
+	if err != nil {
+		t.Fatalf("create thread in channel: %v", err)
+	}
+	if thread.ChannelID == nil || *thread.ChannelID != channel.ID {
+		t.Fatal("thread did not record its channel")
+	}
+
+	inChannel, err := svc.Threads(ctx, creator, "", &channel.ID, 0, 20)
+	if err != nil {
+		t.Fatalf("threads in channel: %v", err)
+	}
+	var seen bool
+	for _, tv := range inChannel {
+		if tv.ID == thread.ID {
+			seen = true
+		}
+	}
+	if !seen {
+		t.Fatal("thread not returned when filtering by its own channel")
+	}
+
+	inOther, err := svc.Threads(ctx, creator, "", &other.ID, 0, 20)
+	if err != nil {
+		t.Fatalf("threads in other channel: %v", err)
+	}
+	for _, tv := range inOther {
+		if tv.ID == thread.ID {
+			t.Fatal("thread leaked into an unrelated channel's filtered page")
+		}
+	}
+}
+
+// TestCreateThread_UnknownChannelRejected guards the validation that a
+// thread cannot be filed under a channel that does not exist.
+func TestCreateThread_UnknownChannelRejected(t *testing.T) {
+	pool := testPool(t)
+	ctx := context.Background()
+	svc := newService(pool)
+
+	asker := mustCreateUser(t, pool)
+	bogus := uuid.New()
+
+	_, err := svc.CreateThread(ctx, asker, "A question with a bad channel",
+		"Body of the question.", nil, &bogus)
+	if !errors.Is(err, community.ErrValidation) {
+		t.Fatalf("expected ErrValidation for an unknown channel, got %v", err)
 	}
 }

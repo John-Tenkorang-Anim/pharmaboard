@@ -33,11 +33,14 @@ func (s SubjectType) Valid() bool {
 }
 
 const (
-	MaxPostLength    = 4000
-	MaxThreadBody    = 8000
-	MaxTitleLength   = 200
-	MinTitleLength   = 5
-	MaxTagsPerThread = 5
+	MaxPostLength        = 4000
+	MaxThreadBody        = 8000
+	MaxTitleLength       = 200
+	MinTitleLength       = 5
+	MaxTagsPerThread     = 5
+	MinChannelNameLength = 2
+	MaxChannelNameLength = 80
+	MaxChannelDescLength = 300
 )
 
 type Post struct {
@@ -63,6 +66,7 @@ type FeedPost struct {
 type ForumThread struct {
 	ID              uuid.UUID
 	AuthorID        uuid.UUID
+	ChannelID       *uuid.UUID
 	Title           string
 	Body            string
 	Tags            []string
@@ -72,6 +76,20 @@ type ForumThread struct {
 	CreatedAt       time.Time
 	LastActivityAt  time.Time
 	HiddenAt        *time.Time
+}
+
+// Channel is a member-creatable discussion space within RxForum — the same
+// role a subreddit plays: a named topic other threads are filed under.
+// created_by is nil for the handful of starter channels seeded by migration
+// 000014, which no member authored.
+type Channel struct {
+	ID          uuid.UUID
+	Slug        string
+	Name        string
+	Description string
+	CreatedBy   *uuid.UUID
+	ThreadCount int
+	CreatedAt   time.Time
 }
 
 type ForumThreadView struct {

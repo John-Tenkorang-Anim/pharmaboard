@@ -36,10 +36,15 @@ type Repository interface {
 
 	CreateThread(ctx context.Context, t ForumThread) error
 	GetThread(ctx context.Context, id uuid.UUID) (ForumThread, error)
-	ThreadPage(ctx context.Context, search string, offset, limit int) ([]ForumThread, error)
+	ThreadPage(ctx context.Context, search string, channelID *uuid.UUID, offset, limit int) ([]ForumThread, error)
 	CreateReply(ctx context.Context, r ForumReply) error
 	RepliesForThread(ctx context.Context, threadID uuid.UUID) ([]ForumReply, error)
 	AcceptReply(ctx context.Context, threadID, replyID, actorID uuid.UUID) error
+
+	// CreateChannel returns ErrAlreadyExists on a slug collision.
+	CreateChannel(ctx context.Context, c Channel) error
+	ListChannels(ctx context.Context) ([]Channel, error)
+	ChannelByID(ctx context.Context, id uuid.UUID) (Channel, error)
 
 	CreateReport(ctx context.Context, r Report) error
 	Hide(ctx context.Context, subject SubjectType, subjectID uuid.UUID, reason string) error

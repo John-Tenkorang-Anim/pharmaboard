@@ -2,7 +2,9 @@ package community
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/google/uuid"
@@ -220,7 +222,7 @@ func (s *Service) SetReaction(ctx context.Context, subject SubjectType, subjectI
 
 // --- forum -----------------------------------------------------------------
 
-func (s *Service) CreateThread(ctx context.Context, authorID uuid.UUID, title, body string, tags []string) (ForumThread, error) {
+func (s *Service) CreateThread(ctx context.Context, authorID uuid.UUID, title, body string, tags []string, channelID *uuid.UUID) (ForumThread, error) {
 	title = strings.TrimSpace(title)
 	body = strings.TrimSpace(body)
 	if len(title) < MinTitleLength || len(title) > MaxTitleLength {
@@ -235,13 +237,25 @@ func (s *Service) CreateThread(ctx context.Context, authorID uuid.UUID, title, b
 	if tags == nil {
 		tags = []string{}
 	}
+	if channelID != nil {
+		// A thread can only be filed under a channel that actually exists —
+		// the foreign key would catch this too, but this way a bad ID reads
+		// as an ordinary validation error, not a raw SQL failure.
+		if _, err := s.repo.ChannelByID(ctx, *channelID); err != nil {
+			if errors.Is(err, ErrNotFound) {
+				return ForumThread{}, fmt.Errorf("%w: that channel no longer exists", ErrValidation)
+			}
+			return ForumThread{}, err
+		}
+	}
 
 	thread := ForumThread{
-		ID:       uuid.Must(uuid.NewV7()),
-		AuthorID: authorID,
-		Title:    title,
-		Body:     body,
-		Tags:     tags,
+		ID:        uuid.Must(uuid.NewV7()),
+		AuthorID:  authorID,
+		ChannelID: channelID,
+		Title:     title,
+		Body:      body,
+		Tags:      tags,
 	}
 	if err := s.repo.CreateThread(ctx, thread); err != nil {
 		return ForumThread{}, err
@@ -249,7 +263,7 @@ func (s *Service) CreateThread(ctx context.Context, authorID uuid.UUID, title, b
 	return s.repo.GetThread(ctx, thread.ID)
 }
 
-func (s *Service) Threads(ctx context.Context, viewerID uuid.UUID, search string, page, limit int) ([]ForumThreadView, error) {
+func (s *Service) Threads(ctx context.Context, viewerID uuid.UUID, search string, channelID *uuid.UUID, page, limit int) ([]ForumThreadView, error) {
 	if limit <= 0 || limit > 100 {
 		limit = 25
 	}
@@ -257,7 +271,7 @@ func (s *Service) Threads(ctx context.Context, viewerID uuid.UUID, search string
 		page = 0
 	}
 
-	threads, err := s.repo.ThreadPage(ctx, search, page*limit, limit)
+	threads, err := s.repo.ThreadPage(ctx, search, channelID, page*limit, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -362,6 +376,61 @@ func (s *Service) Reply(ctx context.Context, authorID, threadID uuid.UUID, body 
 // 14: accepted answers are explicit, never inferred from scores.
 func (s *Service) AcceptReply(ctx context.Context, actorID, threadID, replyID uuid.UUID) error {
 	return s.repo.AcceptReply(ctx, threadID, replyID, actorID)
+}
+
+// --- channels ----------------------------------------------------------------
+
+var slugPattern = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+
+// slugify turns a channel name into the URL/identifier-safe form the
+// database's CHECK constraint requires, so a member typing "Renal Dosing!"
+// doesn't need to know slug rules themselves.
+func slugify(name string) string {
+	lower := strings.ToLower(strings.TrimSpace(name))
+	var b strings.Builder
+	lastDash := true // avoids a leading dash
+	for _, r := range lower {
+		switch {
+		case r >= 'a' && r <= 'z' || r >= '0' && r <= '9':
+			b.WriteRune(r)
+			lastDash = false
+		case !lastDash:
+			b.WriteRune('-')
+			lastDash = true
+		}
+	}
+	return strings.Trim(b.String(), "-")
+}
+
+func (s *Service) CreateChannel(ctx context.Context, createdBy uuid.UUID, name, description string) (Channel, error) {
+	name = strings.TrimSpace(name)
+	description = strings.TrimSpace(description)
+	if len(name) < MinChannelNameLength || len(name) > MaxChannelNameLength {
+		return Channel{}, fmt.Errorf("%w: a channel name must be %d-%d characters", ErrValidation, MinChannelNameLength, MaxChannelNameLength)
+	}
+	if len(description) > MaxChannelDescLength {
+		return Channel{}, fmt.Errorf("%w: a description must be at most %d characters", ErrValidation, MaxChannelDescLength)
+	}
+	slug := slugify(name)
+	if !slugPattern.MatchString(slug) {
+		return Channel{}, fmt.Errorf("%w: choose a name with at least one letter or number", ErrValidation)
+	}
+
+	channel := Channel{
+		ID:          uuid.Must(uuid.NewV7()),
+		Slug:        slug,
+		Name:        name,
+		Description: description,
+		CreatedBy:   &createdBy,
+	}
+	if err := s.repo.CreateChannel(ctx, channel); err != nil {
+		return Channel{}, err
+	}
+	return s.repo.ChannelByID(ctx, channel.ID)
+}
+
+func (s *Service) Channels(ctx context.Context) ([]Channel, error) {
+	return s.repo.ListChannels(ctx)
 }
 
 // --- moderation ------------------------------------------------------------

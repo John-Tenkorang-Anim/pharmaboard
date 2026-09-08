@@ -191,6 +191,7 @@ export interface ProfileView {
 
 export interface ForumThreadSummary {
   id: string;
+  channel_id: string | null;
   title: string;
   body: string;
   tags: string[];
@@ -201,6 +202,16 @@ export interface ForumThreadSummary {
   has_accepted: boolean;
   created_at: string;
   last_activity_at: string;
+}
+
+export interface ForumChannel {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  thread_count: number;
+  official: boolean;
+  created_at: string;
 }
 
 export interface ForumReply {

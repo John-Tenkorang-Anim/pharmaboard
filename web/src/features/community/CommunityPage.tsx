@@ -16,6 +16,8 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { Modal } from "@/components/ui/Modal";
+import { RichTextEditor } from "@/components/ui/RichText";
 import { SkeletonPost } from "@/components/ui/Skeleton";
 import { useAuth } from "@/features/auth/AuthContext";
 import {
@@ -27,13 +29,20 @@ import {
   type FeedScope,
 } from "./api";
 import { PostCard } from "./PostCard";
-export function PostComposer({ scope = "everyone" }: { scope?: FeedScope }) {
-  const { user } = useAuth();
+
+function PostComposerModal({
+  open,
+  onClose,
+  scope,
+}: {
+  open: boolean;
+  onClose: () => void;
+  scope: FeedScope;
+}) {
   const create = useCreatePost(scope);
   const [body, setBody] = useState("");
   const [media, setMedia] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [open, setOpen] = useState(false);
   async function submit(e: FormEvent) {
     e.preventDefault();
     if ((!body.trim() && !media.length) || uploading) return;
@@ -41,75 +50,71 @@ export function PostComposer({ scope = "everyone" }: { scope?: FeedScope }) {
       await create.mutateAsync([body, ...media.map((id) => `[media:${id}]`)].join("\n"));
       setMedia([]);
       setBody("");
-      setOpen(false);
+      onClose();
     } catch {
-      /* Keep draft available. */
+      /* Keep draft available for retry. */
     }
   }
   return (
-    <section className="social-card p-5">
-      <form onSubmit={submit}>
-        <div className="flex items-start gap-3">
-          {user && <Avatar userId={user.id} name={user.display_name} size="md" />}
-          <textarea
-            aria-label="Create a post"
-            onFocus={() => setOpen(true)}
-            value={body}
-            maxLength={3800}
-            onChange={(e) => setBody(e.target.value)}
-            rows={open ? 4 : 1}
-            placeholder="What’s on your mind?"
-            className="min-w-0 flex-1 resize-none rounded-xl bg-[#F6F7F9] px-4 py-3 text-sm leading-6 placeholder:text-muted focus:outline-none"
-          />
-        </div>
-        <MediaPicker
-          value={media}
-          onChange={(v) => {
-            setMedia(v);
-            setOpen(true);
-          }}
-          onBusy={setUploading}
-          actions={
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(true);
-                  document
-                    .querySelector<HTMLTextAreaElement>('textarea[aria-label="Create a post"]')
-                    ?.focus();
-                }}
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted hover:bg-slate-50"
-              >
-                <PenLine size={16} />
-                Write a post
-              </button>
-              <Link
-                to="/forum"
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted hover:bg-slate-50"
-              >
-                <MessageSquare size={16} />
-                Ask in {platform.forumName}
-              </Link>
-            </>
-          }
-        />
-        {open || media.length ? (
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs text-muted">
-              Share an idea, experience, or useful link. No patient information.
-            </p>
-            <Button
-              loading={create.isPending}
-              disabled={(!body.trim() && !media.length) || uploading}
-            >
-              <PenLine size={14} />
-              Publish post
-            </Button>
-          </div>
-        ) : null}
+    <Modal open={open} onClose={onClose} title="Write a post">
+      <form onSubmit={submit} className="space-y-4">
+        <RichTextEditor label="Post" placeholder="What’s on your mind?" value={body} onChange={setBody} />
+        <MediaPicker value={media} onChange={setMedia} onBusy={setUploading} />
+        <p className="text-xs text-muted">
+          Share an idea, experience, or useful link. No patient information.
+        </p>
         <ErrorBanner error={create.error} />
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            loading={create.isPending}
+            disabled={(!body.trim() && !media.length) || uploading}
+          >
+            <PenLine size={14} />
+            Publish post
+          </Button>
+        </div>
       </form>
+    </Modal>
+  );
+}
+
+export function PostComposer({ scope = "everyone" }: { scope?: FeedScope }) {
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  return (
+    <section className="social-card p-4">
+      <div className="flex items-center gap-3">
+        {user && <Avatar userId={user.id} name={user.display_name} size="md" />}
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="min-w-0 flex-1 rounded-full bg-[#F6F7F9] px-4 py-2.5 text-left text-sm text-muted hover:bg-slate-100"
+        >
+          What’s on your mind?
+        </button>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-hairline pt-3">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted hover:bg-slate-50"
+        >
+          <PenLine size={16} />
+          Write a post
+        </button>
+        <Link
+          to="/forum?ask=1"
+          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted hover:bg-slate-50"
+        >
+          <MessageSquare size={16} />
+          Ask in {platform.forumName}
+        </Link>
+      </div>
+      <PostComposerModal open={open} onClose={() => setOpen(false)} scope={scope} />
     </section>
   );
 }

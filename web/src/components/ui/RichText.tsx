@@ -1,19 +1,37 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 function inline(text: string): ReactNode[] {
-  return text.split(/(\*\*[^*]+\*\*|==[^=]+==|\*[^*]+\*)/g).map((part, i) =>
-    part.startsWith("**") ? (
-      <strong key={i}>{part.slice(2, -2)}</strong>
-    ) : part.startsWith("==") ? (
-      <mark key={i} className="rounded bg-amber-200 px-0.5 text-slate-900">
-        {part.slice(2, -2)}
-      </mark>
-    ) : part.startsWith("*") ? (
-      <em key={i}>{part.slice(1, -1)}</em>
-    ) : (
-      part
-    ),
-  );
+  return text
+    .split(/(\*\*[^*]+\*\*|==[^=]+==|\*[^*]+\*|https?:\/\/[^\s]+)/g)
+    .map((part, i) =>
+      part.startsWith("**") ? (
+        <strong key={i}>{part.slice(2, -2)}</strong>
+      ) : part.startsWith("==") ? (
+        <mark key={i} className="rounded bg-amber-200 px-0.5 text-slate-900">
+          {part.slice(2, -2)}
+        </mark>
+      ) : part.startsWith("*") ? (
+        <em key={i}>{part.slice(1, -1)}</em>
+      ) : /^https?:\/\//.test(part) ? (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="break-all text-accent-700 underline underline-offset-2"
+        >
+          {part}
+        </a>
+      ) : (
+        part
+      ),
+    );
 }
+const EMOJI = [
+  "😀", "😁", "😂", "🤣", "😊", "😇", "🙂", "😉", "😍", "🤩",
+  "🤔", "😴", "😮", "😢", "🙌", "👍", "👎", "🙏", "👏", "💪",
+  "🤝", "✅", "❌", "⚠️", "💡", "🔥", "🎉", "📌", "📚", "💊",
+  "🩺", "🧪", "🔬", "❤️", "💬", "📎", "⏰", "📅", "🚀", "⭐",
+];
 export function RichText({ text }: { text: string }) {
   return (
     <div className="space-y-3 break-words text-sm leading-7">
@@ -52,7 +70,9 @@ export function RichTextEditor({
   onChange: (value: string) => void;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
+  const emojiRef = useRef<HTMLDivElement>(null);
   const [preview, setPreview] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
   function format(before: string, after = "") {
     const el = ref.current;
     if (!el) return;
@@ -65,6 +85,28 @@ export function RichTextEditor({
       el.setSelectionRange(start + before.length, start + before.length + selected.length);
     });
   }
+  function insertAtCursor(text: string) {
+    const el = ref.current;
+    if (!el) {
+      onChange(value + text);
+      return;
+    }
+    const start = el.selectionStart,
+      end = el.selectionEnd;
+    onChange(value.slice(0, start) + text + value.slice(end));
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + text.length, start + text.length);
+    });
+  }
+  useEffect(() => {
+    if (!showEmoji) return;
+    function onClickAway(e: MouseEvent) {
+      if (emojiRef.current && !emojiRef.current.contains(e.target as Node)) setShowEmoji(false);
+    }
+    document.addEventListener("mousedown", onClickAway);
+    return () => document.removeEventListener("mousedown", onClickAway);
+  }, [showEmoji]);
   return (
     <div>
       <label htmlFor="notice-body" className="mb-2 block text-sm font-medium">
@@ -94,6 +136,39 @@ export function RichTextEditor({
               {f.label}
             </button>
           ))}
+          <div ref={emojiRef} className="relative">
+            <button
+              type="button"
+              disabled={preview}
+              aria-haspopup="true"
+              aria-expanded={showEmoji}
+              onClick={() => setShowEmoji((v) => !v)}
+              className="rounded px-3 py-2 text-xs font-semibold hover:bg-white disabled:opacity-40"
+            >
+              🙂 Emoji
+            </button>
+            {showEmoji && (
+              <div
+                role="menu"
+                aria-label="Insert emoji"
+                className="absolute left-0 top-full z-20 mt-1 grid w-64 grid-cols-10 gap-0.5 rounded-lg border border-hairline bg-white p-2 shadow-overlay"
+              >
+                {EMOJI.map((e) => (
+                  <button
+                    key={e}
+                    type="button"
+                    onClick={() => {
+                      insertAtCursor(e);
+                      setShowEmoji(false);
+                    }}
+                    className="rounded p-1 text-lg leading-none hover:bg-slate-100"
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button
             type="button"
             aria-pressed={preview}

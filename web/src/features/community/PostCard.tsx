@@ -15,6 +15,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { Modal } from "@/components/ui/Modal";
+import { RichText } from "@/components/ui/RichText";
 import { useAuth } from "@/features/auth/AuthContext";
 import { formatRelative } from "@/lib/format";
 import type { FeedPost } from "@/lib/types";
@@ -23,27 +24,6 @@ const YOUTUBE_PATTERN =
   /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/;
 export function youTubeId(text: string) {
   return text.match(YOUTUBE_PATTERN)?.[1] ?? null;
-}
-function Body({ text }: { text: string }) {
-  return (
-    <p className="whitespace-pre-wrap break-words text-[15px] leading-7 text-ink">
-      {text.split(/(\s+)/).map((p, i) =>
-        /^https?:\/\//.test(p) ? (
-          <a
-            key={i}
-            href={p}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="break-all text-accent-700 underline underline-offset-2"
-          >
-            {p}
-          </a>
-        ) : (
-          p
-        ),
-      )}
-    </p>
-  );
 }
 export function PostCard({ post }: { post: FeedPost }) {
   const { user } = useAuth();
@@ -173,7 +153,7 @@ export function PostCard({ post }: { post: FeedPost }) {
         </button>
       </header>
       <div className="px-5 pb-4 pt-4">
-        <Body text={withoutMedia(post.body)} />
+        <RichText text={withoutMedia(post.body)} />
         <MediaAttachments body={post.body} source={post.id} kind="post" />
       </div>
       {video && (
