@@ -122,48 +122,12 @@ html, body, #root { background-color: #ffffff; }
   .social-action { @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors hover:bg-slate-50 disabled:opacity-50; }
 }
 
-/* Expressive accents live around content, never behind long passages. */
-:root {
-  --accent: 109 60 220;
-  --accent-dark: 83 38 177;
-  --accent-soft: 245 240 255;
-  --app-font: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
-}
+
+:root { --accent: 109 60 220; --accent-dark: 83 38 177; --accent-soft: 245 240 255; --app-font: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif; }
 body, button, input, textarea, select { font-family: var(--app-font); }
-.social-topbar { box-shadow: 0 4px 24px rgb(41 27 80 / .035); }
-.social-sidebar { border-color: #eeeaf5; }
-.social-sidebar nav { padding-top: .25rem; }
-.social-nav-item { position: relative; margin-bottom: .3rem; }
-.social-nav-item > svg { padding: 6px; width: 32px; height: 32px; border-radius: 10px; background: rgb(var(--accent-soft)); color: rgb(var(--accent-dark)); }
-.social-nav-item:nth-child(3n+2) > svg { background: #fff0e7; color: #ad481d; }
-.social-nav-item:nth-child(3n+3) > svg { background: #eaf2ff; color: #2456b7; }
-.social-nav-item[aria-current="page"] { box-shadow: inset 3px 0 0 rgb(var(--accent)); font-weight: 700; }
-.social-card { border-color: #eeeaf3; border-radius: 18px; box-shadow: 0 5px 22px -12px rgb(65 37 104 / .18); }
-.social-action:hover { background: rgb(var(--accent-soft)); color: rgb(var(--accent-dark)); }
-.home-welcome { position: relative; overflow: hidden; border-radius: 22px; padding: 2rem; background: linear-gradient(115deg,rgb(var(--accent-soft)),#fff6ef 78%,#fff0f6); }
-.home-welcome::after { content: ""; position: absolute; width: 130px; height: 130px; right: -45px; top: -45px; border: 22px solid rgb(var(--accent) / .08); border-radius: 50%; pointer-events: none; }
-.home-welcome h1 { max-width: 90%; }
-.discovery-tile:nth-child(1) { background: #f5f0ff; border-color: transparent; }
-.discovery-tile:nth-child(2) { background: #fff4e9; border-color: transparent; }
-.discovery-tile:nth-child(2) svg { color: #a95215; }
-.discovery-tile:nth-child(3) { background: #edf4ff; border-color: transparent; }
-.discovery-tile:nth-child(3) svg { color: #245bb4; }
-.preview-cover { background: linear-gradient(115deg,rgb(var(--accent)),#d969aa,#f2b775); }
-.workspace-heading h1, .page-intro h1 { letter-spacing: -.035em; }
-.segment { border: 0; border-radius: 14px; padding: 5px; background: #f6f3fa; }
-.segment-item { border: 0; border-radius: 10px; padding: .65rem 1rem; }
-.segment-item[data-active="true"] { background: white; box-shadow: 0 2px 8px rgb(60 35 90 / .08); }
-@media(max-width:640px) { .home-welcome { padding: 1.5rem; } }
-/* Section identity helps people find their way without adding visual noise. */
-[data-section="learning"] { --section-colour: #b45a16; --section-tint: #fff5e9; }
-[data-section="sessions"] { --section-colour: #7045ba; --section-tint: #f5efff; }
-[data-section="jobs"] { --section-colour: #a83365; --section-tint: #fff0f5; }
-[data-section="forum"] { --section-colour: #2763b7; --section-tint: #eff5ff; }
-[data-section="notices"] { --section-colour: #9f481e; --section-tint: #fff5ed; }
-[data-section="network"], [data-section="community"] { --section-colour: rgb(var(--accent-dark)); --section-tint: rgb(var(--accent-soft)); }
-[data-section] .workspace-heading { border-radius: 20px; padding: 1.5rem; background: var(--section-tint, rgb(var(--accent-soft))); }
-[data-section] .workspace-heading .eyebrow { color: var(--section-colour, rgb(var(--accent-dark))); }
-.social-nav-item[href="/learning"] > svg, .social-nav-item[href="/notices"] > svg { background: #fff1e5; color: #a54d16; }
-.social-nav-item[href="/jobs"] > svg { background: #ffedf4; color: #a83365; }
-.social-nav-item[href="/messaging"] > svg, .social-nav-item[href="/forum"] > svg { background: #ecf3ff; color: #2456b7; }
-.social-nav-item[href="/settings"] > svg { background: #f1eff6; color: #696176; }
+.social-nav-item > svg { width: 21px; height: 21px; flex-shrink: 0; }
+.social-nav-item[aria-current="page"] { background: #f1f3f5; color: #20252b; font-weight: 700; }
+.social-card { border-radius: 10px; border-color: #e3e6e9; box-shadow: none; }
+.social-topbar { border-bottom: 1px solid #eef0f2; }
+.social-action:hover { background: #f3f5f7; }
+.preview-cover { background: rgb(var(--accent)); }

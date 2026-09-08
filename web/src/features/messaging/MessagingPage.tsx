@@ -66,7 +66,11 @@ function ConversationListItem({
           <UsersIcon className="size-5" />
         </div>
       ) : (
-        <Avatar name={conversationLabel(conversation, user?.id)} size="md" />
+        <Avatar
+          userId={conversation.members?.find((m) => m.id !== user?.id)?.id}
+          name={conversationLabel(conversation, user?.id)}
+          size="md"
+        />
       )}
       <div className="min-w-0 flex-1">
         <p

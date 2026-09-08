@@ -157,7 +157,12 @@ export function AppShell({
           {user && (
             <div className="flex items-center gap-3">
               <Link to={`/people/${user.id}`} aria-label="Your profile">
-                <Avatar name={user.display_name} size="sm" verification={user.verification_state} />
+                <Avatar
+                  userId={user.id}
+                  name={user.display_name}
+                  size="sm"
+                  verification={user.verification_state}
+                />
               </Link>
               <Link to={`/people/${user.id}`} className="min-w-0 flex-1">
                 <p className="truncate text-xs font-semibold">{user.display_name}</p>

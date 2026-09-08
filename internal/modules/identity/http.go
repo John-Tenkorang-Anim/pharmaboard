@@ -26,6 +26,7 @@ func Routes(svc *Service) chi.Router {
 		r.Post("/otp/verify", verifyOTPHandler(svc))
 	}
 	r.With(RequireAuth(svc)).Get("/me", meHandler())
+	r.With(RequireAuth(svc)).Put("/photo", photoUpload(svc))
 	return r
 }
 
@@ -36,6 +37,7 @@ func DirectoryRoutes(svc *Service, auth func(http.Handler) http.Handler) chi.Rou
 	r.Use(auth)
 	r.Get("/", searchDirectoryHandler(svc))
 	r.Get("/{id}", getProfileHandler(svc))
+	r.Get("/{id}/photo", photoRead(svc))
 	return r
 }
 

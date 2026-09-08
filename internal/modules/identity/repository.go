@@ -11,6 +11,8 @@ import (
 // Repository is the persistence port for the identity module. The Postgres
 // implementation lives in postgres.go; tests may supply a fake.
 type Repository interface {
+	SavePhoto(context.Context, uuid.UUID, string) error
+	ReadPhoto(context.Context, uuid.UUID) (string, error)
 	CreateUser(ctx context.Context, u User) error
 	FindByContact(ctx context.Context, channel Channel, value string) (User, error)
 	FindByID(ctx context.Context, id uuid.UUID) (User, error)

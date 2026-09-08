@@ -1,21 +1,11 @@
 import { MessageNotifications } from "@/features/messaging/MessageNotifications";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  ArrowUpRight,
-  CalendarDays,
-  GraduationCap,
-  Users,
-  Bookmark,
-  Video,
-  BriefcaseBusiness,
-  Bell,
-} from "lucide-react";
+import { CalendarDays, GraduationCap, Users, Bookmark, Video, Bell } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { SkeletonPost } from "@/components/ui/Skeleton";
-import { useAuth } from "@/features/auth/AuthContext";
 import { useResources, meetingCode } from "@/features/workspace/api";
 import { useNotices } from "@/features/notices/api";
 import { SeverityChip } from "@/components/ui/Badge";
@@ -24,7 +14,6 @@ import { useCommunityFeed } from "./api";
 import { PostCard } from "./PostCard";
 import { PostComposer } from "./CommunityPage";
 export function HomePage() {
-  const { user } = useAuth();
   const [tab, setTab] = useState<"community" | "following" | "notices">("community");
   const feed = useCommunityFeed(tab === "following" ? "following" : "everyone");
   const posts = feed.data?.pages.flatMap((p) => p.items) ?? [];
@@ -38,7 +27,6 @@ export function HomePage() {
     .sort((a, b) => new Date(a.starts_at!).getTime() - new Date(b.starts_at!).getTime())[0];
   const lesson = learning.data?.pages.flatMap((p) => p.items).find((l) => !l.completed);
   const savedJobs = jobs.data?.pages.flatMap((p) => p.items) ?? [];
-  const name = user?.display_name.split(" ")[0] ?? "there";
   const right = (
     <div className="space-y-5">
       <section className="social-card p-5">
@@ -135,54 +123,22 @@ export function HomePage() {
   );
   return (
     <AppShell right={right}>
-      <header className="home-welcome mb-7">
-        <p className="text-xs text-muted">
-          {new Date().toLocaleDateString(undefined, {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-          })}
-        </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Good to see you, {name}.</h1>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          A little inspiration. A useful conversation. Your next step forward.
-        </p>
+      <header className="mb-5 flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Your feed</h1>
+        <Link to="/network" className="text-sm font-semibold text-accent-700">
+          Find people
+        </Link>
       </header>
       <MessageNotifications />
-      <div className="mb-6 grid gap-3 sm:grid-cols-3">
-        {[
-          {
-            to: "/community",
-            title: "Find your people",
-            sub: "Explore the conversation",
-            icon: Users,
-          },
-          {
-            to: "/learning",
-            title: "Keep learning",
-            sub: "Build on what you know",
-            icon: GraduationCap,
-          },
-          {
-            to: "/jobs",
-            title: "Your next chapter",
-            sub: "Discover opportunities",
-            icon: BriefcaseBusiness,
-          },
-        ].map(({ to, title, sub, icon: Icon }) => (
-          <Link
-            key={to}
-            to={to}
-            className="discovery-tile social-card group p-4 transition-shadow hover:shadow-md"
-          >
-            <div className="mb-4 flex items-center justify-between">
-              <Icon size={20} className="text-accent-600" />
-              <ArrowUpRight size={14} className="text-muted group-hover:text-accent-600" />
-            </div>
-            <p className="text-sm font-semibold">{title}</p>
-            <p className="mt-1 text-[11px] text-muted">{sub}</p>
-          </Link>
-        ))}
+      <div className="mb-4 flex items-center justify-between text-xs text-muted">
+        <span>Updates from your professional network</span>
+        <button
+          disabled={feed.isFetching}
+          onClick={() => feed.refetch()}
+          className="font-semibold text-accent-700 disabled:opacity-50"
+        >
+          {feed.isFetching ? "Checking…" : "Refresh updates"}
+        </button>
       </div>
       <PostComposer scope={tab === "following" ? "following" : "everyone"} />
       <div className="my-6 flex flex-wrap items-center justify-between gap-3">

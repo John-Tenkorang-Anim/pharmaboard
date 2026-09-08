@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/api";
 import clsx from "clsx";
 import { Check } from "lucide-react";
 import { initials } from "@/lib/format";
@@ -28,15 +30,24 @@ const sizeClasses = {
 
 export function Avatar({
   name,
+  userId,
   size = "md",
   verification,
   className,
 }: {
   name: string;
+  userId?: string;
   size?: keyof typeof sizeClasses;
   verification?: VerificationState;
   className?: string;
 }) {
+  const { data } = useQuery({
+    queryKey: ["profile-photo", userId],
+    queryFn: () => apiFetch<{ image: string }>(`/users/${userId}/photo`),
+    enabled: !!userId,
+    staleTime: 60000,
+    retry: false,
+  });
   return (
     <div className={clsx("relative shrink-0", className)}>
       <div
@@ -47,7 +58,11 @@ export function Avatar({
         )}
         title={name}
       >
-        {initials(name || "?")}
+        {data?.image?.startsWith("data:image/jpeg;base64,") ? (
+          <img src={data.image} alt={name} className="h-full w-full rounded-full object-cover" />
+        ) : (
+          initials(name || "?")
+        )}
       </div>
       {verification === "verified" && (
         <span

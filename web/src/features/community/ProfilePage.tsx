@@ -1,3 +1,4 @@
+import { ProfilePhotoEditor } from "./ProfilePhotoEditor";
 import { useCreateConversation } from "@/features/messaging/api";
 import { useParams, useNavigate } from "react-router-dom";
 import { MapPin, Briefcase, MessageCircle, BadgeCheck } from "lucide-react";
@@ -55,6 +56,7 @@ export function ProfilePage() {
         <div className="px-6 pb-5">
           <div className="-mt-10 flex flex-wrap items-end justify-between gap-4">
             <Avatar
+              userId={profile.id}
               name={profile.display_name}
               size="xl"
               verification={profile.verification_state}
@@ -89,6 +91,7 @@ export function ProfilePage() {
             </div>
           </div>
 
+          {is_self && <ProfilePhotoEditor userId={profile.id} />}
           <h1 className="mt-3 text-2xl font-bold text-ink">{profile.display_name}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-faint">
             <span className="flex items-center gap-1.5 capitalize">

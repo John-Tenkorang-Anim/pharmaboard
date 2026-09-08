@@ -150,6 +150,7 @@ export function NetworkPage() {
                     aria-label={`View ${person.display_name}'s profile`}
                   >
                     <Avatar
+                      userId={person.id}
                       name={person.display_name}
                       size="lg"
                       verification={person.verification_state}

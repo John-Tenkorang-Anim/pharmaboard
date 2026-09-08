@@ -46,7 +46,7 @@ export function PostComposer({ scope = "everyone" }: { scope?: FeedScope }) {
     <section className="social-card p-5">
       <form onSubmit={submit}>
         <div className="flex items-start gap-3">
-          {user && <Avatar name={user.display_name} size="md" />}
+          {user && <Avatar userId={user.id} name={user.display_name} size="md" />}
           <textarea
             aria-label="Create a post"
             onFocus={() => setOpen(true)}
@@ -103,7 +103,7 @@ export function CommunitySidebar() {
             .slice(0, 4)
             .map((p) => (
               <Link key={p.id} to={`/people/${p.id}`} className="flex items-center gap-3">
-                <Avatar name={p.display_name} size="sm" />
+                <Avatar userId={p.id} name={p.display_name} size="sm" />
                 <div className="min-w-0">
                   <p className="truncate text-xs font-semibold">{p.display_name}</p>
                   <p className="mt-1 text-[11px] capitalize text-muted">
