@@ -242,6 +242,18 @@ function calendarFile(v: Resource) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+const topicColours = [
+  "bg-blue-50 text-blue-800",
+  "bg-amber-50 text-amber-900",
+  "bg-rose-50 text-rose-800",
+  "bg-violet-50 text-violet-800",
+];
+function topicColour(category: string) {
+  return topicColours[
+    Array.from(category).reduce((sum, char) => sum + char.charCodeAt(0), 0) % topicColours.length
+  ];
+}
+
 export function WorkspacePage({ kind }: { kind: ResourceKind }) {
   const [params, setParams] = useSearchParams();
   const [joinOpen, setJoinOpen] = useState(() => kind === "sessions" && !!params.get("code"));
@@ -364,7 +376,7 @@ export function WorkspacePage({ kind }: { kind: ResourceKind }) {
             key={cat}
             onClick={() => setCategory(cat)}
             aria-pressed={category === cat}
-            className={`border-b-2 px-1 py-2 text-xs font-medium ${category === cat ? "border-accent-600 text-accent-700" : "border-transparent bg-white text-muted hover:border-accent-600"}`}
+            className={`rounded-full border px-4 py-2.5 text-sm font-medium transition-colors ${category === cat ? "border-slate-800 bg-slate-800 text-white" : "border-slate-200 bg-white text-slate-600 hover:border-slate-400 hover:bg-slate-50"}`}
           >
             {cat}
           </button>
@@ -414,7 +426,9 @@ export function WorkspacePage({ kind }: { kind: ResourceKind }) {
             <article
               key={v.id}
               className={
-                kind === "jobs" ? "social-card overflow-hidden p-5" : "overflow-hidden bg-white"
+                kind === "learning"
+                  ? "learning-resource-card flex min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white"
+                  : "social-card overflow-hidden p-5"
               }
             >
               {kind === "learning" && (
@@ -428,7 +442,7 @@ export function WorkspacePage({ kind }: { kind: ResourceKind }) {
                       loading="lazy"
                       src={`https://i.ytimg.com/vi/${youtubeId(v.url)}/hqdefault.jpg`}
                       alt=""
-                      className="absolute inset-0 h-full w-full object-cover opacity-70"
+                      className="absolute inset-0 h-full w-full object-cover"
                     />
                   )}
                   {v.id.startsWith("00000000-") && (
@@ -447,7 +461,7 @@ export function WorkspacePage({ kind }: { kind: ResourceKind }) {
                     </div>
                   )}
                   <span
-                    className={`bg-white/95 p-3 text-ink ${v.id.startsWith("00000000-") ? "absolute bottom-4 right-4 rounded-md" : "relative rounded-full"}`}
+                    className={`bg-white/95 p-3 text-ink ${v.id.startsWith("00000000-") ? "absolute bottom-4 right-4 rounded-md" : "absolute bottom-3 right-3 rounded-full shadow-sm"}`}
                   >
                     <Play size={22} fill="currentColor" />
                   </span>
@@ -458,7 +472,13 @@ export function WorkspacePage({ kind }: { kind: ResourceKind }) {
                   )}
                 </button>
               )}
-              <div className={kind === "learning" ? "py-4" : "relative py-5 pl-16 pr-2"}>
+              <div
+                className={
+                  kind === "learning"
+                    ? "flex flex-1 flex-col p-5 sm:p-6"
+                    : "relative py-5 pl-16 pr-2"
+                }
+              >
                 {kind === "jobs" && (
                   <span
                     className="absolute left-0 top-6 flex size-11 items-center justify-center rounded-md bg-slate-100 text-base font-semibold text-ink"
@@ -482,7 +502,9 @@ export function WorkspacePage({ kind }: { kind: ResourceKind }) {
                 )}
 
                 <div className="mb-3 flex items-center justify-between gap-2">
-                  <span className="rounded-md bg-accent-50 px-2.5 py-1 text-xs font-medium text-accent-700">
+                  <span
+                    className={`rounded-full px-3 py-1 text-[11px] font-semibold ${topicColour(v.category)}`}
+                  >
                     {v.category}
                   </span>
                   <button
@@ -499,7 +521,7 @@ export function WorkspacePage({ kind }: { kind: ResourceKind }) {
                 </div>
                 <button
                   onClick={() => setSelected(v)}
-                  className="text-left text-lg font-semibold leading-6 hover:text-accent-600"
+                  className="break-words text-left text-base font-semibold leading-6 text-slate-900 hover:text-accent-700"
                 >
                   {v.title}
                 </button>
@@ -519,10 +541,16 @@ export function WorkspacePage({ kind }: { kind: ResourceKind }) {
                     })}
                   </p>
                 )}
-                <p className="mt-3 line-clamp-2 max-w-2xl text-sm leading-6 text-muted">
+                <p className="mb-2 mt-3 line-clamp-2 max-w-2xl text-sm leading-6 text-muted">
                   {v.description}
                 </p>
-                <div className="mt-4 flex items-center justify-between">
+                <div
+                  className={
+                    kind === "learning"
+                      ? "mt-auto flex flex-wrap items-center justify-between gap-2 pt-5"
+                      : "mt-4 flex items-center justify-between"
+                  }
+                >
                   <button
                     onClick={() => setSelected(v)}
                     className="flex items-center gap-2 text-sm font-medium text-accent-600"
