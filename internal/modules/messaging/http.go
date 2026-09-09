@@ -321,6 +321,7 @@ func conversationResponse(c Conversation) map[string]any {
 		"created_at":        c.CreatedAt,
 		"last_message_at":   c.LastMessageAt,
 		"encryption_notice": EncryptionNotice,
+		"can_message":       c.CanMessage,
 	}
 }
 
@@ -351,6 +352,8 @@ func writeServiceError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, ErrNotFound):
 		problem.NotFound(w, err.Error())
+	case errors.Is(err, ErrMutualFollow):
+		problem.Forbidden(w, err.Error())
 	case errors.Is(err, ErrNotParticipant):
 		problem.Forbidden(w, err.Error())
 	case errors.Is(err, ErrValidation):

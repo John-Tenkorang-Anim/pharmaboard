@@ -42,6 +42,7 @@ type Member struct {
 }
 
 type Conversation struct {
+	CanMessage    bool
 	Members       []Member
 	ID            uuid.UUID
 	Kind          ConversationKind

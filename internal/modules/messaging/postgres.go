@@ -344,3 +344,10 @@ func randomRoomSlug() (string, error) {
 	}
 	return "pharmaboard-" + hex.EncodeToString(buf), nil
 }
+
+// MutualFollow reads both directions of the social connection before messaging.
+func (r *PostgresRepository) MutualFollow(ctx context.Context, a, b uuid.UUID) (bool, error) {
+	var ok bool
+	err := r.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM follows WHERE follower_id=$1 AND followee_id=$2) AND EXISTS(SELECT 1 FROM follows WHERE follower_id=$2 AND followee_id=$1)`, a, b).Scan(&ok)
+	return ok, err
+}

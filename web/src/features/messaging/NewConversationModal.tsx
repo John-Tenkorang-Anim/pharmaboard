@@ -47,8 +47,8 @@ export function NewConversationModal({
     <Modal open={open} onClose={onClose} title="Start a conversation">
       <form onSubmit={submit} className="space-y-4">
         <p className="text-sm leading-6 text-muted">
-          Choose a colleague for a direct message, or bring several people together for a team
-          conversation. Up to 20 members, including you.
+          You must follow each other before messaging. For a group, all members must mutually follow
+          each other. Up to 20 members, including you.
         </p>
         <div className="relative">
           <Search size={16} className="absolute left-3 top-3 text-muted" />

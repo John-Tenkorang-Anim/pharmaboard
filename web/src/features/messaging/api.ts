@@ -22,6 +22,7 @@ export function useConversation(id: string | undefined) {
     queryKey: ["conversations", id],
     queryFn: () => apiFetch<Conversation>(`/messaging/conversations/${id}`),
     enabled: !!id,
+    refetchInterval: 4000,
   });
 }
 

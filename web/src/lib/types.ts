@@ -97,6 +97,7 @@ export type ConversationKind = "direct" | "group";
 export type MessageKind = "text" | "system";
 
 export interface Conversation {
+  can_message?: boolean;
   members?: { id: string; name: string }[];
   id: string;
   kind: ConversationKind;

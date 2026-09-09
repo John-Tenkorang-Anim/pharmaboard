@@ -2,6 +2,7 @@ package messaging
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/John-Tenkorang-Anim/pharmaboard/internal/modules/identity"
 
@@ -38,6 +39,13 @@ func (s *Service) CreateConversation(ctx context.Context, creatorID uuid.UUID, o
 		return Conversation{}, fmt.Errorf("%w: a conversation may have at most %d participants", ErrValidation, MaxParticipants)
 	}
 
+	for i, a := range all {
+		for _, b := range all[i+1:] {
+			if err := s.requireMutual(ctx, a, b); err != nil {
+				return Conversation{}, err
+			}
+		}
+	}
 	kind := KindDirect
 	if len(all) > 2 {
 		kind = KindGroup
@@ -97,6 +105,11 @@ func (s *Service) GetConversation(ctx context.Context, callerID, conversationID 
 	if err != nil {
 		return c, err
 	}
+	err = s.requireMessaging(ctx, callerID, conversationID)
+	if err != nil && !errors.Is(err, ErrMutualFollow) {
+		return c, err
+	}
+	c.CanMessage = err == nil
 	return s.enrich(ctx, c)
 }
 
@@ -147,6 +160,9 @@ func (s *Service) AddParticipant(ctx context.Context, callerID, conversationID, 
 		return fmt.Errorf("%w: a conversation may have at most %d participants", ErrValidation, MaxParticipants)
 	}
 
+	if err := s.requireMessaging(ctx, newUserID, conversationID); err != nil {
+		return err
+	}
 	return s.repo.AddParticipant(ctx, conversationID, callerID, newUserID)
 }
 
@@ -159,6 +175,9 @@ func (s *Service) SendMessage(ctx context.Context, callerID, conversationID uuid
 		return Message{}, fmt.Errorf("%w: message body must be 1-%d characters", ErrValidation, MaxMessageLength)
 	}
 	if err := s.requireActiveParticipant(ctx, conversationID, callerID); err != nil {
+		return Message{}, err
+	}
+	if err := s.requireMessaging(ctx, callerID, conversationID); err != nil {
 		return Message{}, err
 	}
 	return s.repo.SendMessage(ctx, conversationID, callerID, body)
@@ -187,6 +206,9 @@ func (s *Service) MarkReadThrough(ctx context.Context, callerID, conversationID,
 // room and offer the same join URL to the other conversation members.
 func (s *Service) StartCall(ctx context.Context, callerID, conversationID uuid.UUID) (CallSession, error) {
 	if err := s.requireActiveParticipant(ctx, conversationID, callerID); err != nil {
+		return CallSession{}, err
+	}
+	if err := s.requireMessaging(ctx, callerID, conversationID); err != nil {
 		return CallSession{}, err
 	}
 	call, err := s.repo.StartCall(ctx, conversationID, callerID)
@@ -226,4 +248,32 @@ func (s *Service) enrich(ctx context.Context, c Conversation) (Conversation, err
 		}
 	}
 	return c, nil
+}
+
+var ErrMutualFollow = errors.New("You must follow each other to message. In groups, every recipient must follow the sender back.")
+
+func (s *Service) requireMutual(ctx context.Context, a, b uuid.UUID) error {
+	if a == b {
+		return nil
+	}
+	ok, err := s.repo.MutualFollow(ctx, a, b)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return ErrMutualFollow
+	}
+	return nil
+}
+func (s *Service) requireMessaging(ctx context.Context, caller, conversation uuid.UUID) error {
+	members, err := s.repo.ListActiveParticipants(ctx, conversation)
+	if err != nil {
+		return err
+	}
+	for _, p := range members {
+		if err := s.requireMutual(ctx, caller, p.UserID); err != nil {
+			return err
+		}
+	}
+	return nil
 }

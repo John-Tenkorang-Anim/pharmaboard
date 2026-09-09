@@ -206,7 +206,12 @@ function ThreadView({ conversationId }: { conversationId: string }) {
             Not end-to-end encrypted
           </p>
         </div>
-        <Button size="sm" loading={startCall.isPending} onClick={handleStartCall}>
+        <Button
+          size="sm"
+          loading={startCall.isPending}
+          disabled={conversation?.can_message === false}
+          onClick={handleStartCall}
+        >
           <Video className="size-4" />
           Video call
         </Button>
@@ -306,11 +311,18 @@ function ThreadView({ conversationId }: { conversationId: string }) {
         )}
       </div>
 
+      {conversation?.can_message === false && (
+        <p role="status" className="shrink-0 bg-slate-50 px-5 py-3 text-sm text-muted">
+          Messaging requires mutual follows with every recipient. Your existing messages remain
+          available to read.
+        </p>
+      )}
       <form
         onSubmit={handleSend}
         className="flex shrink-0 items-end gap-2 border-t border-hairline bg-surface p-3"
       >
         <textarea
+          disabled={conversation?.can_message === false}
           aria-label="Message"
           maxLength={4000}
           value={draft}
@@ -329,7 +341,7 @@ function ThreadView({ conversationId }: { conversationId: string }) {
           aria-label="Send message"
           type="submit"
           loading={sendMessage.isPending}
-          disabled={!draft.trim()}
+          disabled={!draft.trim() || conversation?.can_message === false}
           className="!px-3"
         >
           <Send className="size-4" />
