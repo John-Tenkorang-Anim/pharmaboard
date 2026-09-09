@@ -3,9 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import clsx from "clsx";
 import {
   MessageCircle,
-  Maximize2,
-  Minimize2,
-  Plus,
+  SquarePen,
   Send,
   Video,
   ArrowLeft,
@@ -129,7 +127,9 @@ function MessageBubble({
   return (
     <div className={clsx("flex gap-3", grouped ? "pt-1" : "pt-5")}>
       <div className="w-8 shrink-0">
-        {!grouped && <Avatar userId={message.sender_id ?? undefined} name={senderName ?? "Member"} size="sm" />}
+        {!grouped && (
+          <Avatar userId={message.sender_id ?? undefined} name={senderName ?? "Member"} size="sm" />
+        )}
       </div>
       <div className="min-w-0 flex-1">
         {!grouped && (
@@ -349,51 +349,25 @@ export function MessagingPage() {
   const navigate = useNavigate();
   const { data, isLoading, error } = useConversations();
   const [modalOpen, setModalOpen] = useState(false);
-  const [focusMode, setFocusMode] = useState(false);
   useEffect(() => {
-    if (!focusMode) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const escape = (event: KeyboardEvent) => {
-      if (
-        event.key === "Escape" &&
-        !modalOpen &&
-        !event.defaultPrevented &&
-        !document.querySelector("dialog[open]")
-      )
-        setFocusMode(false);
-    };
-    document.addEventListener("keydown", escape);
     return () => {
       document.body.style.overflow = previous;
-      document.removeEventListener("keydown", escape);
     };
-  }, [focusMode, modalOpen]);
+  }, []);
 
   return (
-    <AppShell focusMode={focusMode}>
-      <div className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-[1.75rem] font-semibold text-ink">Messages</h1>
-          <p className="mt-1 text-sm text-faint">Direct and small-group conversations.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            size="lg"
-            onClick={() => setFocusMode((value) => !value)}
-            aria-pressed={focusMode}
-            aria-label={focusMode ? "Exit message focus" : "Expand messages"}
-            title={focusMode ? "Exit focus (Esc)" : "Expand messages"}
-          >
-            {focusMode ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-            <span className="hidden sm:inline">{focusMode ? "Exit focus" : "Expand"}</span>
-          </Button>
-          <Button size="lg" onClick={() => setModalOpen(true)}>
-            <Plus className="size-4" />
-            New message
-          </Button>
-        </div>
+    <AppShell focusMode>
+      <div className="mb-2 flex shrink-0 items-center gap-3">
+        <Button variant="ghost" onClick={() => navigate("/home")} aria-label="Back to workspace">
+          <ArrowLeft size={18} />
+        </Button>
+        <h1 className="text-lg font-semibold text-ink">Messages</h1>
+        <Button variant="ghost" className="ml-auto" onClick={() => setModalOpen(true)}>
+          <SquarePen size={17} />
+          New message
+        </Button>
       </div>
 
       {conversationId && (
@@ -406,12 +380,7 @@ export function MessagingPage() {
           All conversations
         </Button>
       )}
-      <Card
-        className={clsx(
-          "flex overflow-hidden p-0",
-          focusMode ? "min-h-0 flex-1" : "min-h-[420px] h-[calc(100dvh-15rem)]",
-        )}
-      >
+      <Card className={clsx("flex overflow-hidden p-0", "min-h-0 flex-1")}>
         <aside
           className={clsx(
             "w-full md:w-64 shrink-0 flex-col border-r border-hairline",
@@ -453,8 +422,8 @@ export function MessagingPage() {
                 title="Select a conversation"
                 description="Choose one from the list, or start a new conversation."
                 action={
-                  <Button onClick={() => setModalOpen(true)}>
-                    <Plus className="size-4" />
+                  <Button variant="ghost" onClick={() => setModalOpen(true)}>
+                    <SquarePen className="size-4" />
                     New conversation
                   </Button>
                 }

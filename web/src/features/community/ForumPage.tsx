@@ -2,7 +2,7 @@ import { RichTextEditor } from "@/components/ui/RichText";
 import { platform } from "@/lib/platform";
 import { useState, useEffect, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { MessagesSquare, CheckCircle2, Search, Plus, MessageSquare, Hash } from "lucide-react";
+import { MessagesSquare, CheckCircle2, Search, SquarePen, MessageSquare, Hash } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -70,7 +70,10 @@ function AskModal({
       <form onSubmit={submit} className="space-y-4">
         {channels.length > 0 && (
           <div>
-            <label htmlFor="thread-channel" className="mb-1.5 block text-[0.8125rem] font-medium text-ink">
+            <label
+              htmlFor="thread-channel"
+              className="mb-1.5 block text-[0.8125rem] font-medium text-ink"
+            >
               Channel
             </label>
             <select
@@ -251,8 +254,8 @@ export function ForumPage() {
             Work through concepts, compare research, and prepare together.
           </p>
         </div>
-        <Button onClick={() => setAskOpen(true)}>
-          <Plus className="size-4" />
+        <Button variant="secondary" size="sm" onClick={() => setAskOpen(true)}>
+          <SquarePen className="size-4" />
           Start discussion
         </Button>
       </div>
@@ -260,16 +263,14 @@ export function ForumPage() {
       <div className="grid gap-8 xl:grid-cols-[220px_minmax(0,1fr)_270px]">
         <aside className="space-y-1">
           <div className="mb-2 flex items-center justify-between px-1">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-faint">
-              Channels
-            </h2>
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-faint">Channels</h2>
             <button
               type="button"
               aria-label="Create a channel"
               onClick={() => setCreateChannelOpen(true)}
               className="rounded p-1 text-muted hover:bg-slate-50 hover:text-accent-700"
             >
-              <Plus className="size-4" />
+              <SquarePen className="size-4" />
             </button>
           </div>
           <button
@@ -303,7 +304,7 @@ export function ForumPage() {
             onClick={() => setCreateChannelOpen(true)}
             className="mt-1 flex w-full items-center gap-1.5 rounded-lg px-3 py-2 text-left text-sm text-accent-700 hover:bg-accent-50"
           >
-            <Plus className="size-3.5" />
+            <SquarePen className="size-3.5" />
             New channel
           </button>
         </aside>
@@ -426,7 +427,11 @@ export function ForumPage() {
                     : "Start the first study discussion"
                 }
                 description="Ask the first question and colleagues can answer it."
-                action={<Button onClick={() => setAskOpen(true)}>Start discussion</Button>}
+                action={
+                  <Button variant="secondary" size="sm" onClick={() => setAskOpen(true)}>
+                    Start discussion
+                  </Button>
+                }
               />
             </Card>
           )}
