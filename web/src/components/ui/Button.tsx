@@ -12,13 +12,14 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<Variant, string> = {
-  primary: "bg-accent-600 text-white hover:bg-accent-700 disabled:bg-hairline disabled:text-faint",
+  primary:
+    "bg-slate-100 text-slate-900 border border-slate-200 hover:bg-slate-200 hover:border-slate-300 disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-100",
   secondary:
-    "bg-surface text-ink border border-divider hover:border-accent-600 disabled:text-faint disabled:hover:border-divider",
-  ghost: "text-muted hover:bg-accent-50 hover:text-ink disabled:text-faint",
+    "bg-surface text-ink border border-divider hover:border-slate-300 disabled:text-faint disabled:hover:border-divider",
+  ghost: "text-muted hover:bg-slate-100 hover:text-ink disabled:text-faint",
   danger:
     "bg-severity-critical text-white hover:bg-[#7a181f] disabled:bg-hairline disabled:text-faint",
-  quiet: "text-accent-600 hover:text-accent-700 hover:underline disabled:text-faint",
+  quiet: "text-slate-700 hover:text-slate-950 hover:underline disabled:text-faint",
 };
 
 const sizeClasses: Record<Size, string> = {
@@ -34,7 +35,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       disabled={disabled || loading}
       className={clsx(
         "inline-flex items-center justify-center rounded-md font-medium transition-colors duration-100",
-        "disabled:cursor-not-allowed",
+        "disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500",
         variantClasses[variant],
         sizeClasses[size],
         className,

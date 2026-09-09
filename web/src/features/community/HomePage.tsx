@@ -32,7 +32,9 @@ function CommunityMembershipButton({ community }: { community: Community }) {
       size="sm"
       variant={community.viewer_member ? "secondary" : "primary"}
       loading={setMembership.isPending}
-      onClick={() => setMembership.mutate({ channelId: community.id, on: !community.viewer_member })}
+      onClick={() =>
+        setMembership.mutate({ channelId: community.id, on: !community.viewer_member })
+      }
     >
       {community.viewer_member ? "Joined" : "Join"}
     </Button>
@@ -244,7 +246,7 @@ export function HomePage() {
             <p className="mt-2 text-xs text-muted">{next.organization}</p>
             <Link
               to={`/sessions?code=${meetingCode(next.id)}`}
-              className="mt-5 inline-flex items-center gap-2 rounded-md bg-accent-600 px-4 py-2 text-xs font-semibold text-white"
+              className="mt-5 inline-flex items-center gap-2 rounded-md border border-slate-200 bg-slate-100 hover:bg-slate-200 px-4 py-2 text-xs font-semibold text-slate-900"
             >
               <Video size={14} />
               View session

@@ -104,7 +104,7 @@ export function SettingsPage() {
             brighter.
           </p>
           <button
-            className="mt-5 rounded-full bg-accent-600 px-5 py-2 text-sm font-semibold text-white"
+            className="mt-5 rounded-full border border-slate-200 bg-slate-100 hover:bg-slate-200 px-5 py-2 text-sm font-semibold text-slate-900"
             onClick={() =>
               setStatus("This is a style preview. Your choices already apply across the app.")
             }

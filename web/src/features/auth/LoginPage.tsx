@@ -277,7 +277,7 @@ export function LoginPage() {
             )}
             <button
               disabled={busy}
-              className="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+              className="w-full rounded-lg border border-slate-200 bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-slate-200 disabled:opacity-50"
             >
               {busy ? "Please wait…" : signup ? "Create account" : "Sign in"}
             </button>

@@ -744,7 +744,7 @@ export function WorkspacePage({ kind }: { kind: ResourceKind }) {
                   href={active.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-md bg-accent-600 px-4 py-2 text-sm font-medium text-white"
+                  className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-slate-100 hover:bg-slate-200 px-4 py-2 text-sm font-medium text-slate-900"
                 >
                   {kind === "jobs" ? "Apply on employer website" : "Open in YouTube"}
                   <ArrowUpRight size={16} />
