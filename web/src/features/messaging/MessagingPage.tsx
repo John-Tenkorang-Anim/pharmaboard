@@ -98,8 +98,10 @@ function MessageBubble({
   isOwn,
   onJoin,
   senderName,
+  grouped = false,
 }: {
   senderName?: string;
+  grouped?: boolean;
   message: Message;
   isOwn: boolean;
   onJoin: (url: string) => void;
@@ -125,22 +127,22 @@ function MessageBubble({
   }
 
   return (
-    <div className={clsx("flex", isOwn ? "justify-end" : "justify-start")}>
-      <div
-        className={clsx(
-          "max-w-[75%] rounded-lg px-4 py-2.5 text-[0.9375rem] leading-relaxed",
-          isOwn
-            ? "rounded-br-md bg-accent-700 text-white"
-            : "rounded-bl-md bg-surface text-ink border border-hairline",
+    <div className={clsx("flex gap-3", grouped ? "pt-1" : "pt-5")}>
+      <div className="w-8 shrink-0">
+        {!grouped && <Avatar userId={message.sender_id ?? undefined} name={senderName ?? "Member"} size="sm" />}
+      </div>
+      <div className="min-w-0 flex-1">
+        {!grouped && (
+          <div className="mb-1 flex items-baseline gap-2">
+            <span className="text-sm font-semibold text-ink">
+              {isOwn ? "You" : (senderName ?? "Member")}
+            </span>
+            <time dateTime={message.created_at} className="text-[11px] text-faint">
+              {formatTime(message.created_at)}
+            </time>
+          </div>
         )}
-      >
-        {!isOwn && (
-          <p className="mb-1 text-xs font-semibold text-accent-700">{senderName ?? "Member"}</p>
-        )}
-        <p className="whitespace-pre-wrap break-words">{message.body}</p>
-        <p className={clsx("mt-1 text-[0.625rem]", isOwn ? "text-hairline" : "text-faint")}>
-          {formatTime(message.created_at)}
-        </p>
+        <p className="whitespace-pre-wrap break-words text-sm leading-6 text-ink">{message.body}</p>
       </div>
     </div>
   );
@@ -157,6 +159,7 @@ function ThreadView({ conversationId }: { conversationId: string }) {
   const [search, setSearch] = useState("");
   const [room, setRoom] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const followLatest = useRef(true);
   const latest = messages.at(-1);
   useMarkMessagesRead(
     conversationId,
@@ -164,14 +167,17 @@ function ThreadView({ conversationId }: { conversationId: string }) {
   );
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages.length]);
+    if (followLatest.current && tab === "chat" && !search) {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+    }
+  }, [messages.length, tab, search]);
 
   async function handleSend(e: FormEvent) {
     e.preventDefault();
     if (!draft.trim() || sendMessage.isPending) return;
     const body = draft;
     try {
+      followLatest.current = true;
       await sendMessage.mutateAsync(body);
       setDraft("");
     } catch {
@@ -189,8 +195,8 @@ function ThreadView({ conversationId }: { conversationId: string }) {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-y-auto">
-      <div className="flex items-center justify-between gap-4 border-b border-hairline px-5 py-3">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <div className="flex shrink-0 items-center justify-between gap-4 border-b border-hairline px-5 py-3">
         <div className="min-w-0">
           <p className="text-[0.9375rem] font-bold text-ink">
             {conversation ? conversationLabel(conversation, user?.id) : "Conversation"}
@@ -206,7 +212,7 @@ function ThreadView({ conversationId }: { conversationId: string }) {
         </Button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 border-b border-hairline px-4 py-2">
+      <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-hairline px-4 py-2">
         <button
           onClick={() => setTab("chat")}
           aria-pressed={tab === "chat"}
@@ -236,7 +242,12 @@ function ThreadView({ conversationId }: { conversationId: string }) {
       <ErrorBanner error={messagesError || startCall.error} />
       <div
         ref={scrollRef}
-        className="scrollbar-thin flex-1 space-y-2.5 overflow-y-auto bg-canvas px-5 py-4"
+        aria-label="Message history"
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          followLatest.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+        }}
+        className="scrollbar-thin min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white px-5 pb-6 pt-1"
       >
         {tab === "resources" ? (
           <div className="space-y-3">
@@ -275,10 +286,18 @@ function ThreadView({ conversationId }: { conversationId: string }) {
         ) : (
           messages
             .filter((m) => m.body.toLowerCase().includes(search.toLowerCase()))
-            .map((m) => (
+            .map((m, index, visible) => (
               <MessageBubble
                 key={m.id}
                 message={m}
+                grouped={
+                  index > 0 &&
+                  visible[index - 1]?.kind === "text" &&
+                  visible[index - 1]?.sender_id === m.sender_id &&
+                  new Date(m.created_at).getTime() -
+                    new Date(visible[index - 1]!.created_at).getTime() <
+                    300000
+                }
                 isOwn={m.sender_id === user?.id}
                 senderName={conversation?.members?.find((p) => p.id === m.sender_id)?.name}
                 onJoin={setRoom}
@@ -289,7 +308,7 @@ function ThreadView({ conversationId }: { conversationId: string }) {
 
       <form
         onSubmit={handleSend}
-        className="flex items-end gap-2 border-t border-hairline bg-surface p-3"
+        className="flex shrink-0 items-end gap-2 border-t border-hairline bg-surface p-3"
       >
         <textarea
           aria-label="Message"

@@ -192,12 +192,12 @@ export function AppShell({
           style={focusMode ? { display: "none" } : undefined}
           className="social-topbar sticky top-0 z-30 bg-white/95 backdrop-blur"
         >
-          <div className="flex h-20 items-center gap-4 px-5 md:px-8">
+          <div className="flex h-12 items-center gap-2 px-3 sm:gap-3 md:px-5">
             <button
               aria-label="Open navigation"
               aria-expanded={mobile}
               onClick={() => setMobile(true)}
-              className="lg:hidden"
+              className="flex size-10 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-slate-100 lg:hidden"
             >
               <Menu size={21} />
             </button>
@@ -207,28 +207,30 @@ export function AppShell({
               title={collapsed ? "Expand sidebar" : "Collapse sidebar for focus"}
               aria-expanded={!collapsed}
               aria-controls="workspace-navigation"
-              className="hidden rounded-lg p-2 text-muted hover:bg-slate-100 lg:block"
+              className="hidden size-10 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-slate-100 lg:flex"
             >
               {collapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
             </button>
-            <span className="hidden text-sm font-medium sm:block">
-              Workspace <span className="mx-3 text-divider">/</span>{" "}
-              <span className="text-muted">{current?.label ?? "Account"}</span>
+            <span className="hidden shrink-0 text-xs font-semibold text-muted sm:block">
+              {current?.label ?? "Account"}
             </span>
-            <form onSubmit={onSearch} className="relative ml-auto w-full max-w-xs">
-              <Search size={16} className="absolute left-3 top-2.5 text-muted" />
+            <form onSubmit={onSearch} className="relative ml-auto w-full max-w-[220px]">
+              <Search
+                size={16}
+                className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted"
+              />
               <input
                 aria-label="Search colleagues"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Find a colleague…"
-                className="w-full rounded-lg border border-hairline bg-canvas py-2 pl-9 pr-3 text-xs"
+                className="h-8 w-full rounded-md border-0 bg-canvas pl-8 pr-3 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-600"
               />
             </form>
             <Link
               to="/notices"
               aria-label="Official notices"
-              className="rounded-lg border border-hairline p-2 text-muted hover:bg-canvas"
+              className="flex size-10 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-canvas"
             >
               <Bell size={18} />
             </Link>

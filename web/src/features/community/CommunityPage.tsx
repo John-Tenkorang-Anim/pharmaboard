@@ -61,7 +61,10 @@ function PostComposerModal({
       <form onSubmit={submit} className="space-y-4">
         {channels.length > 0 && (
           <div>
-            <label htmlFor="post-community" className="mb-1.5 block text-[0.8125rem] font-medium text-ink">
+            <label
+              htmlFor="post-community"
+              className="mb-1.5 block text-[0.8125rem] font-medium text-ink"
+            >
               Community
             </label>
             <select
@@ -79,7 +82,12 @@ function PostComposerModal({
             </select>
           </div>
         )}
-        <RichTextEditor label="Post" placeholder="What’s on your mind?" value={body} onChange={setBody} />
+        <RichTextEditor
+          label="Post"
+          placeholder="What’s on your mind?"
+          value={body}
+          onChange={setBody}
+        />
         <MediaPicker value={media} onChange={setMedia} onBusy={setUploading} />
         <p className="text-xs text-muted">
           Share an idea, experience, or useful link. No patient information.
@@ -115,32 +123,30 @@ export function PostComposer({
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   return (
-    <section className="social-card p-4">
-      <div className="flex items-center gap-3">
-        {user && <Avatar userId={user.id} name={user.display_name} size="md" />}
+    <section aria-label="Create or start a discussion" className="rounded-xl bg-white px-3 py-2">
+      <div className="flex items-center gap-2">
+        {user && (
+          <div className="hidden shrink-0 sm:block">
+            <Avatar userId={user.id} name={user.display_name} size="sm" />
+          </div>
+        )}
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="min-w-0 flex-1 rounded-full bg-[#F6F7F9] px-4 py-2.5 text-left text-sm text-muted hover:bg-slate-100"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-accent-700 transition-colors hover:bg-accent-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600"
         >
-          What’s on your mind?
-        </button>
-      </div>
-      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-hairline pt-3">
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted hover:bg-slate-50"
-        >
-          <PenLine size={16} />
+          <PenLine size={17} className="shrink-0" />
           Write a post
         </button>
         <Link
           to="/forum?ask=1"
-          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted hover:bg-slate-50"
+          className="ml-auto inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-medium text-muted transition-colors hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600"
         >
-          <MessageSquare size={16} />
-          Ask in {platform.forumName}
+          <MessageSquare size={17} className="shrink-0" />
+          <span>
+            <span className="hidden sm:inline">Ask in </span>
+            {platform.forumName}
+          </span>
         </Link>
       </div>
       <PostComposerModal
