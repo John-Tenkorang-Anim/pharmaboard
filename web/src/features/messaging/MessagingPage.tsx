@@ -4,6 +4,8 @@ import clsx from "clsx";
 import {
   MessageCircle,
   SquarePen,
+  Maximize2,
+  Minimize2,
   Send,
   Video,
   ArrowLeft,
@@ -125,13 +127,18 @@ function MessageBubble({
   }
 
   return (
-    <div className={clsx("flex gap-3", grouped ? "pt-1" : "pt-5")}>
+    <div className={clsx("flex gap-2", isOwn && "flex-row-reverse", grouped ? "pt-1" : "pt-4")}>
       <div className="w-8 shrink-0">
         {!grouped && (
           <Avatar userId={message.sender_id ?? undefined} name={senderName ?? "Member"} size="sm" />
         )}
       </div>
-      <div className="min-w-0 flex-1">
+      <div
+        className={clsx(
+          "min-w-0 max-w-[82%] rounded-2xl px-3 py-2",
+          isOwn ? "bg-slate-200 rounded-tr-md" : "bg-white rounded-tl-md shadow-sm",
+        )}
+      >
         {!grouped && (
           <div className="mb-1 flex items-baseline gap-2">
             <span className="text-sm font-semibold text-ink">
@@ -252,7 +259,7 @@ function ThreadView({ conversationId }: { conversationId: string }) {
           const el = e.currentTarget;
           followLatest.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
         }}
-        className="scrollbar-thin min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white px-5 pb-6 pt-1"
+        className="scrollbar-thin min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#f3f4f6] [background-image:none] px-5 pb-6 pt-1"
       >
         {tab === "resources" ? (
           <div className="space-y-3">
@@ -361,22 +368,33 @@ export function MessagingPage() {
   const navigate = useNavigate();
   const { data, isLoading, error } = useConversations();
   const [modalOpen, setModalOpen] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
   useEffect(() => {
+    if (!focusMode) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = previous;
     };
-  }, []);
+  }, [focusMode]);
 
   return (
-    <AppShell focusMode>
+    <AppShell focusMode={focusMode}>
       <div className="mb-2 flex shrink-0 items-center gap-3">
         <Button variant="ghost" onClick={() => navigate("/home")} aria-label="Back to workspace">
           <ArrowLeft size={18} />
         </Button>
         <h1 className="text-lg font-semibold text-ink">Messages</h1>
-        <Button variant="ghost" className="ml-auto" onClick={() => setModalOpen(true)}>
+        <Button
+          variant="ghost"
+          className="ml-auto"
+          aria-pressed={focusMode}
+          onClick={() => setFocusMode(!focusMode)}
+        >
+          {focusMode ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          {focusMode ? "Exit focus" : "Focus"}
+        </Button>
+        <Button variant="ghost" onClick={() => setModalOpen(true)}>
           <SquarePen size={17} />
           New message
         </Button>
@@ -392,7 +410,12 @@ export function MessagingPage() {
           All conversations
         </Button>
       )}
-      <Card className={clsx("flex overflow-hidden p-0", "min-h-0 flex-1")}>
+      <Card
+        className={clsx(
+          "flex overflow-hidden p-0",
+          focusMode ? "min-h-0 flex-1" : "h-[calc(100dvh-12rem)] min-h-[400px]",
+        )}
+      >
         <aside
           className={clsx(
             "w-full md:w-64 shrink-0 flex-col border-r border-hairline",
